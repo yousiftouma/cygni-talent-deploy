@@ -1,10 +1,10 @@
 const http = require("http");
 
-const port = process.env.PORT ?? 80;
+const port = process.env.PORT ?? 8080;
 
 const server = http.createServer((req, res) => {
   res.writeHead(200, "OK");
-  res.write(Buffer.from("Hello World!"));
+  res.write(Buffer.from("Hello World 2!"));
   res.end();
 });
 
