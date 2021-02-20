@@ -20,5 +20,5 @@ else
     cat .ssh/deploy.pub | ssh $HOST "sudo cat >> /root/.ssh/authorized_keys"
 fi
 
-ssh $HOST "curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -; apt update; apt install -y ufw nodejs git"
+ssh $HOST "curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -; apt update; apt install -y ufw nodejs"
 ssh $HOST "ufw default deny incoming; ufw default allow outgoing; ufw allow ssh; ufw allow http; ufw --force enable"
