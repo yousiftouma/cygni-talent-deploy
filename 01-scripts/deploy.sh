@@ -1,6 +1,7 @@
 #/bin/bash
 set -e
 
+# ssh
 if test -f .ssh/deploy; then
     echo ".ssh/deploy exists"
 else
@@ -11,6 +12,7 @@ else
 fi
 
 HOST="-i ./.ssh/deploy -o UserKnownHostsFile=./.ssh/known_hosts root@68.183.221.185 "
+DEPLOYMENT_DIR=/root/app_$(date +%Y%m%d_%H%M%S)
 
 # prepare
 npm ci
@@ -18,7 +20,7 @@ npm test
 npm prune --production
 
 # copy
-tar --exclude="./.*" -czf - . | ssh $HOST "mkdir -p /root/app; tar zxf - --directory=/root/app"
+tar --exclude="./.*" -czf - . | ssh $host "mkdir $deployment_dir; tar zxf - --directory=$deployment_dir"
 
 # systemd
 echo "
@@ -29,7 +31,7 @@ Description=Cygni Competence Deploy
 ExecStart=/usr/bin/env npm start
 Environment=NODE_ENV=production
 Environment=PORT=80
-WorkingDirectory=/root/app
+WorkingDirectory=$DEPLOYMENT_DIR
 
 [Install]
 WantedBy=default.target
