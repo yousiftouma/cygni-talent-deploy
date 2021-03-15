@@ -90,7 +90,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
    ```
    sudo apt update;
-   sudo apt install -y ufw nodejs;
+   sudo apt install -y ufw nodejs npm;
    ```
 
 1. Setup firewall rules
@@ -153,27 +153,80 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 ## Step 01 - continuous deployment
 
-In this step, we will start deploying our application from our CI-server whenever changes are pushed to the remote repository. The main issue to overcome here is that the CI-server needs SSH-access to the host machine. We could solve this by somehow uploading our own private SSH-key, but we strongly advise against this. If the key is leaked for some reason, you would have to replace it on every service you use this key. Therefore, we will create a new key specifically for deployment of this application. The public key will be added to the host machines authorized keys, and the private key will be made available to the CI-server for deployment.
+In this step, we will start to deploy our application from a CI-server when code changes are pushed to a remote repository. The main issue to overcome here is that the CI-server needs SSH-access to the host machine.
+
+We will create a new SSH-key locally specifically for this purpose. This SSH-key will be used on our CI-server to access the host machine.
 
 ### Host machine
 
-1. Create a new SSH key on your machine, we will use this to be able to deploy from a CI-server
-1. Copy new key to .ssh/authorized_keys on server machine
-1. Create known_hosts file from host machine
+**Note: all command snippets assume that the current working directory is the repository root**
 
-### CI-server
+1. Create a new SSH key on your machine. For now, we will simply store it a directory called `.ssh` relative to the repository directory. Make sure the ssh keys are ignored by git.
 
-1. Upload keys and known hosts as github secrets
-1. Create a new basic github action that imports secrets and executes the deploy script.
+   ```
+   mkdir -p .ssh
+   ssh-keygen -f .ssh/deploy -t rsa -b 4096
+   ```
+
+1. Retrieve the public keys from the server and save to a file.
+
+   ```
+   ssh-keyscan <SERVER> > .ssh/known_hosts
+   ```
+
+1. Create a new user called `deploy` on the host.
+
+   You can follow the same instructions as when creating the admin user.
+
+   **TODO** create an appropriate limited sudoers file
+
+1. Copy .ssh/deploy.pub to /home/deploy/authorized_keys on the host machine.
 
 ### Deployment
 
-1. Write key and hosts file to file from environment
-1. Specify key file and hosts when using connecting to host machine
+We need to modify our deploy script so that it uses the provided ssh-keys. This can be done with the `-i` and `-o` flags to ssh.
+
+For example:
+
+```
+SSH_OPTS="-i ./.ssh/deploy -o UserKnownHostsFile=./.ssh/known_hosts"
+
+ssh $SSH_OPTS deploy@<SERVER> "<cmd>"
+```
+
+### CI-server
+
+1. Upload .ssh/deploy and .ssh/known_hosts as github secrets.
+   Settings -> Secrets -> Environment Secrets
+
+   Select appropriate names for the secrets such as `SSH_PRIVATE_KEY` and `SSH_KNOWN_HOSTS`.
+
+1. Create a new basic github action that imports secrets and executes the deploy script.
+
+   The first step needs to grab the secrets and write them to the file system.
+
+   ```
+   - name: Secrets
+     run: |
+        mkdir -p .ssh
+        echo "$SSH_PRIVATE_KEY" > .ssh/deploy
+        sudo chmod 600 .ssh/deploy
+        echo "$SSH_KNOWN_HOSTS" > .ssh/known_hosts
+     shell: bash
+     env:
+        SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+        SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
+   ```
+
+   The second step can simply execute the script.
+
+   ```
+   - name: Deploy
+     run: ./01-scripts/deploy.sh
+     shell: bash
+   ```
 
 ## Continue...
-
-<!-- - Step XX - non-root - create non-root user that runs application -->
 
 - Step XX - dockerize - dockerize the application to make it more portable (needs a purpose? maybe db?)
 - Step XX - reverse-proxy - setup reverse proxy HAProxy/Nginx/Traefik

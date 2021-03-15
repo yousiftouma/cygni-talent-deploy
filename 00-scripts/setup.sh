@@ -4,7 +4,7 @@ set -e
 SERVER=68.183.221.185
 
 # setup user
-if [ $(ssh -q lenkan@$SERVER exit) ]; then
+if ssh -q lenkan@$SERVER exit; then
     echo "ssh connection for lenkan accepted, skipping user setup"
 else
 ssh root@$SERVER <<EOF
@@ -25,10 +25,10 @@ ssh root@$SERVER <<EOF
     chown -R lenkan /home/lenkan/.ssh;
     chmod 644 /home/lenkan/.ssh/authorized_keys;
 EOF
+
+cat ~/.ssh/id_rsa.pub | ssh root@$SERVER "cat - > /home/lenkan/.ssh/authorized_keys"
 fi
 
-# copy your ssh key for new user
-cat ~/.ssh/id_rsa.pub | ssh root@$SERVER "cat - > /home/lenkan/.ssh/authorized_keys"
 
 # dependencies
 ssh lenkan@$SERVER <<EOF
@@ -38,6 +38,7 @@ ssh lenkan@$SERVER <<EOF
 
     sudo adduser --system cygni;
 
+    curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -;
     sudo apt update;
     sudo apt install -y ufw nodejs;
 
