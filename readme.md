@@ -228,12 +228,33 @@ ssh $SSH_OPTS deploy@<SERVER> "<cmd>"
 
 ## Continue...
 
-- Step XX - dockerize - dockerize the application to make it more portable (needs a purpose? maybe db?)
 - Step XX - reverse-proxy - setup reverse proxy HAProxy/Nginx/Traefik
-- Step XX - certificate - letsencrypt
+  - cert ssl-termination
+  - zero downtime deployment
 - Step XX - multiple environments - test/staging/prod
   - test master
   - tag -> deploy staging
   - manuellt -> deploy tag (måste finnas en tag som är deployad på stage)
   - samma maskin
 - Step XX - rensa bort gamla deployments
+
+  - t.ex. max 10 gamla deployments, titta på cron
+
+- TODO: ssh profiler, istället för att lägga i .ssh
+- TODO: deploy ska bara kunna köra vissa kommandon.
+- TODO: hitta en guide för nginx som rev-proxy
+- TODO: Förtydliga vad som körs på server/local
+
+- TODO: prereqs
+  - forka repo (dubbelkolla att GA funkar)
+- TODO: presentera saker
+  - CI/CD
+  - översikt/målbild
+  - vad kursen inte tar hand om
+    - race conditions
+    - provisionering
+    - Specifika CI servers
+  - systemd
+  - ssh
+  - sudo
+  - förklara script
