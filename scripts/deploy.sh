@@ -9,15 +9,15 @@ else
     echo ".ssh/config does not exist, writing from env"
 
     mkdir -p .ssh
-    echo $SSH_PRIVATE_KEY > ./.ssh/deploy
-    echo $SSH_KNOWN_HOSTS > ./.ssh/known_hosts
+    echo "$SSH_PRIVATE_KEY" > ./.ssh/deploy
+    echo "$SSH_KNOWN_HOSTS" > ./.ssh/known_hosts
     chmod 600 .ssh/deploy
 
     echo "Host cygni
-        HostName $SERVER
-        IdentityFile $(realpath ./.ssh/deploy)
-        UserKnownHostsFile $(realpath ./.ssh/known_hosts)
-    " > ./.ssh/config
+    HostName $SERVER
+    IdentityFile $(realpath ./.ssh/deploy)
+    UserKnownHostsFile $(realpath ./.ssh/known_hosts)
+    " | tee ./.ssh/config
 fi
 
 # prepare
