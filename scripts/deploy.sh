@@ -11,6 +11,7 @@ else
     mkdir -p .ssh
     echo $SSH_PRIVATE_KEY > ./.ssh/deploy
     echo $SSH_KNOWN_HOSTS > ./.ssh/known_hosts
+    chmod 600 .ssh/deploy
 
     echo "Host cygni
         HostName $SERVER
