@@ -13,17 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Secrets
-        run: |
-          mkdir -p .ssh
-          echo "$SSH_PRIVATE_KEY" > .ssh/deploy
-          sudo chmod 600 .ssh/deploy
-          echo "$SSH_KNOWN_HOSTS" > .ssh/known_hosts
+      - name: Deploy
+        run: ./scripts/deploy.sh
         shell: bash
         env:
           SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
           SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
-
-      - name: Deploy
-        run: ./01-scripts/deploy.sh
-        shell: bash
+          SERVER: "68.183.221.185"
