@@ -11,7 +11,7 @@ function create_ssh_key {
         echo "$1 already exists"
     else
         echo "create ssh key $1"
-        ssh-keygen -f $1 -t rsa -b 4096
+        ssh-keygen -f $1
     fi
 }
 
