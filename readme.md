@@ -82,7 +82,6 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
    ```bash
    ssh -t -F .ssh/config root@cygni "\
-      id -u admin && deluser admin && rm -rf /home/admin && \
       adduser admin --ingroup sudo --gecos \"\" && \
       mkdir -p /home/admin/.ssh && \
       mv /tmp/admin.pub /home/admin/.ssh/authorized_keys && \
@@ -93,7 +92,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 1. After this, ssh access should be enabled for the admin user. Try it out:
 
    ```bash
-   ssh -F .ssh/config admin@cygni "sudo -l"
+   ssh -t -F .ssh/config admin@cygni "sudo -l"
    ```
 
 1. Since we now have an admin account with sudo priviliges, we should disable root login through ssh.
@@ -112,7 +111,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 1. Make sure you cannot login as root anymore. You should get an error similar to `root@xx.xx.xx.xx: Permission denied (publickey).`
 
    ```bash
-   ssh -F .ssh/config admin@cygni exit
+   ssh -F .ssh/config root@cygni exit
    ```
 
 ### Setup dependencies and firewall
@@ -227,7 +226,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
    ```bash
    ssh -t -F .ssh/config admin@cygni "\
       sudo addgroup deployers && \
-      sudo adduser deploy --disabled-password --ingroup deployers --gecos "" && \
+      sudo adduser deploy --disabled-password --ingroup deployers --gecos \"\" && \
       sudo mkdir -p /home/deploy/.ssh && \
       sudo mv /tmp/deploy.pub /home/deploy/.ssh/authorized_keys && \
       sudo chown -R deploy /home/deploy/.ssh && \
@@ -263,7 +262,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 ### Deployment
 
-The script in [deploy.sh](./scripts/deploy.sh) are essentially the same steps as performed in the basic deployment from local machine. But it uses the `deploy` user for deploying the application.
+The script in [deploy.sh](./scripts/deploy.sh) is essentially the same steps as performed in the basic deployment from local machine. But it uses the `deploy` user for deploying the application.
 
 ```bash
 #!/bin/bash
