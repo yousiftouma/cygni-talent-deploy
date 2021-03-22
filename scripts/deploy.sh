@@ -26,7 +26,7 @@ npm test
 npm prune --production
 
 # copy
-tar --exclude="./.*" -czf - . | ssh -F .ssh/config deploy@cygni "mkdir -p $DEPLOYMENT_DIR; tar zxf - --directory=$DEPLOYMENT_DIR"
+tar -czf - src/ node_modules/ package.json | ssh -F .ssh/config deploy@cygni "mkdir -p $DEPLOYMENT_DIR; tar zxf - --directory=$DEPLOYMENT_DIR"
 
 # systemd
 echo "

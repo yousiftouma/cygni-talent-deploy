@@ -3,7 +3,7 @@ set -e
 
 mkdir -p .ssh
 
-DEPLOY_SUDOERS="%deployers ALL=(ALL) NOPASSWD:/bin/systemctl daemon-reload, /bin/systemctl restart cygni"
+DEPLOY_SUDOERS="%deployers ALL=NOPASSWD:/bin/systemctl daemon-reload, /bin/systemctl restart cygni"
 
 # Create deployment user with ssh access
 scp -F .ssh/config .ssh/deploy.pub admin@cygni:/tmp/deploy.pub
@@ -25,7 +25,6 @@ ssh -t -F .ssh/config admin@cygni "
     sudo mv /tmp/deploy.pub /home/deploy/.ssh/authorized_keys
     sudo chown -R deploy /home/deploy/.ssh
     sudo chmod 644 /home/deploy/.ssh/authorized_keys
-    ls -la /home/deploy/.ssh
 
     echo \"Setting up cygni.service rights\"
     sudo touch /etc/systemd/system/cygni.service

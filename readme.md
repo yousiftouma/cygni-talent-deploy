@@ -2,8 +2,6 @@
 
 This is a course in Continuous Integration and Continuous Deployment from scracth. That means we are not going to use any off-the-shelf products such as heroku to achieve this. We are going to use a Linux server that we access through ssh. We will automate tasks using bash and run services using systemd.
 
-TODO: server maintenance (crontab?)
-
 ## Goals
 
 The goal of this course is to be able to set up simple automated deployments from scratch.
@@ -28,9 +26,10 @@ Why do we need to know this?
 
 ...
 
-## Prereqs
+## Pre requisites
 
-TODO: fork repository to your own account
+- Fork this repository to your own GitHub account
+- `ssh` client installed on your machine
 
 ## Step 00 - basic deployment
 
@@ -38,69 +37,113 @@ TODO: fork repository to your own account
 
 Before involving any CI-server, we will make sure we can automate deployment from our own developer machines. The goal is to be able to deploy our application on a fresh VPS without manual intervention.
 
-### Setup host machine
+### Setup admin account on server
 
-1. Set up non-root user with ssh-login and sudo access
-
-   ```bash
-   adduser <USER> --disabled-password --ingroup sudo
-   ```
-
-   (tip: provide option `--gecos ""` to skip additional prompts)
-
-1. Enable passwordless sudo for the new user. We need this to be able to execute sudo over ssh.
+1. Set up a variable containing your host servers IP adress, this will make it easier to copy-paste commands later on.
 
    ```
-   echo "<USER> ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/<USER>
-   chmod 440 /etc/sudoers.d/<USER>
-   visudo --check
+   export SERVER=<SERVER-IP>
    ```
 
-1. Copy your public ssh key into `/home/<USER>/.ssh/authorized_keys`. This can be done in multiple ways. For example, prepare the file while still logged in at from the host machine:
+1. Create an SSH-key that we will use for our new admin account.
 
    ```
-   mkdir -p /home/<USER>/.ssh;
-   touch /home/<USER>/.ssh/authorized_keys;
-   chown -R lenkan /home/<USER>/.ssh;
-   chmod 644 /home/<USER>/.ssh/authorized_keys;
+   mkdir -p .ssh
+   ssh-keyscan $SERVER > .ssh/known_hosts
+   ssh-keygen -f .ssh/admin
    ```
 
-   then
+1. Create a new SSH config file that we will use during the exercise.
 
    ```
-   cat ~/.ssh/id_rsa.pub | ssh root@<SERVER> "cat - > /home/<USER>/.ssh/authorized_keys"
+   echo "
+   Host cygni
+      HostName $SERVER
+      UserKnownHostsFile $(realpath ./.ssh/known_hosts)
+
+   Match user root
+      PasswordAuthentication yes
+
+   Match user admin
+      IdentityFile $(realpath ./.ssh/admin)
+
+   Match user deploy
+      IdentityFile $(realpath ./.ssh/deploy)
+   " > ./.ssh/config
    ```
 
-1. Make sure you can log in to the host with the new user.
-
-1. Disable ssh login for the root account.
+1. Copy public key to server
 
    ```
-   echo "PermitRootLogin no" | sudo tee /etc/ssh/sshd_config.d/setup.conf;
-   sudo systemctl restart sshd;
+   scp -F .ssh/config .ssh/admin.pub root@cygni:/tmp/admin.pub
    ```
 
-1. Add a system user for the application
+1. Connect to the server and create the new user account
 
    ```
-   sudo adduser --system cygni;
+   ssh -t -F .ssh/config root@cygni "\
+      id -u admin && deluser admin && rm -rf /home/admin && \
+      adduser admin --ingroup sudo --gecos \"\" && \
+      mkdir -p /home/admin/.ssh && \
+      mv /tmp/admin.pub /home/admin/.ssh/authorized_keys && \
+      chown admin /home/admin/.ssh && \
+      chmod 644 /home/admin/.ssh/authorized_keys"
    ```
+
+1. After this, ssh access should be enabled for the admin user. Try it out:
+
+   ```
+   ssh -F .ssh/config admin@cygni "sudo -l"
+   ```
+
+1. Since we now have an admin account with sudo priviliges, we should disable root login through ssh.
+
+   ```
+   echo "
+   PermitRootLogin no
+   PasswordAuthentication no
+   " | ssh -F .ssh/config admin@cygni "cat - > /tmp/sshd_config"
+   ```
+
+   ```
+   ssh -t -F .ssh/config admin@cygni "sudo mv /tmp/sshd_config /etc/ssh/sshd_config.d/setup.conf && sudo systemctl restart sshd"
+   ```
+
+1. Make sure you cannot login as root anymore. You should get an error similar to `root@xx.xx.xx.xx: Permission denied (publickey).`
+
+   ```
+   ssh -F .ssh/config admin@cygni exit
+   ```
+
+### Setup dependencies and firewall
 
 1. Install dependencies
 
-   ```
-   sudo apt update;
-   sudo apt install -y ufw nodejs npm;
+   ```bash
+   ssh -t -F .ssh/config admin@cygni "\
+      curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - && \
+      sudo apt update && \
+      sudo apt install -y ufw nodejs"
    ```
 
 1. Setup firewall rules
 
+   ```bash
+   ssh -t -F .ssh/config admin@cygni "\
+      sudo ufw default deny incoming && \
+      sudo ufw default allow outgoing && \
+      sudo ufw allow ssh && \
+      sudo ufw allow http && \
+      sudo ufw allow in 8080/tcp && \
+      sudo ufw --force enable"
    ```
-   sudo ufw default deny incoming;
-   sudo ufw default allow outgoing;
-   sudo ufw allow ssh;
-   sudo ufw allow in 8080/tcp;
-   sudo ufw --force enable;
+
+### Create system user
+
+1. Create a system user that we will use to run the service
+
+   ```
+   ssh -t -F .ssh/config admin@cygni "sudo adduser --system cygni"
    ```
 
 ### Deployment
@@ -116,11 +159,20 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 1. Copy application to host machine.
 
    ```
-   DEPLOYMENT_DIR=/opt/cygni-competence-deploy/deploy_$(date +%Y%m%d_%H%M%S)
-   tar --exclude="./.*" -czf - . | ssh $HOST "sudo mkdir -p $DEPLOYMENT_DIR; sudo tar zxf - --directory=$DEPLOYMENT_DIR"
+   DEPLOYMENT_NAME=app_$(date +%Y%m%d_%H%M%S)
+   DEPLOYMENT_DIR=/opt/cygni-competence-deploy/$DEPLOYMENT_NAME
+
+   tar -czf tmp_$DEPLOYMENT_NAME.tar.gz src/ node_modules/ package.json
+
+   scp -F .ssh/config tmp_$DEPLOYMENT_NAME.tar.gz admin@cygni:/tmp/$DEPLOYMENT_NAME.tar.gz
+
+   ssh -t -F .ssh/config admin@cygni "\
+      sudo mkdir -p $DEPLOYMENT_DIR && \
+      sudo tar zxf /tmp/$DEPLOYMENT_NAME.tar.gz --directory=$DEPLOYMENT_DIR && \
+      rm /tmp/$DEPLOYMENT_NAME.tar.gz"
    ```
 
-1. Create a systemd service called `cygni`.
+1. Create/edit the systemd service called `cygni`.
 
    ```
    echo "
@@ -136,65 +188,140 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
    [Install]
    WantedBy=multi-user.target
-   " | ssh $HOST "sudo tee /etc/systemd/system/cygni.service > /dev/null"
+   " > tmp_cygni.service
+
+   scp -F .ssh/config tmp_cygni.service admin@cygni:/tmp/cygni.service
+   ssh -t -F .ssh/config admin@cygni "sudo mv /tmp/cygni.service /etc/systemd/system/cygni.service"
    ```
 
-1. Reload the service files. This step is required as long as the service configuration is changed. In our case, we change the service configuration on every deploy.
+1. Reload the unit and restart the service.
 
    ```
-   sudo systemctl daemon-reload
+   ssh -t -F .ssh/config admin@cygni "sudo systemctl daemon-reload && sudo systemctl restart cygni"
    ```
 
-1. Restart the `cygni` service.
+1. The server should be up and running now. Try it out
 
    ```
-   sudo systemctl restart cygni
+   curl $SERVER:8080
    ```
 
 ## Step 01 - continuous deployment
 
-In this step, we will start to deploy our application from a CI-server when code changes are pushed to a remote repository. The main issue to overcome here is that the CI-server needs SSH-access to the host machine.
+### Create deploy user
 
-We will create a new SSH-key locally specifically for this purpose. This SSH-key will be used on our CI-server to access the host machine.
-
-### Host machine
-
-**Note: all command snippets assume that the current working directory is the repository root**
-
-1. Create a new SSH key on your machine. For now, we will simply store it a directory called `.ssh` relative to the repository directory. Make sure the ssh keys are ignored by git.
+1. Create a new ssh key to use for deployments
 
    ```
-   mkdir -p .ssh
-   ssh-keygen -f .ssh/deploy -t rsa -b 4096
+   ssh-keygen -f .ssh/deploy
    ```
 
-1. Retrieve the public keys from the server and save to a file.
+1. Copy the public key to the server
 
    ```
-   ssh-keyscan <SERVER> > .ssh/known_hosts
+   scp -F .ssh/config .ssh/deploy.pub admin@cygni:/tmp/deploy.pub
    ```
 
-1. Create a new user called `deploy` on the host.
+1. Create the user
 
-   You can follow the same instructions as when creating the admin user.
+   ```
+   ssh -t -F .ssh/config admin@cygni "\
+      sudo addgroup deployers && \
+      sudo adduser deploy --disabled-password --ingroup deployers --gecos "" && \
+      sudo mkdir -p /home/deploy/.ssh && \
+      sudo mv /tmp/deploy.pub /home/deploy/.ssh/authorized_keys && \
+      sudo chown -R deploy /home/deploy/.ssh && \
+      sudo chmod 644 /home/deploy/.ssh/authorized_keys"
+   ```
 
-   **TODO** create an appropriate limited sudoers file
+1. Now, you can login as the user `deploy` on the server. Verify by
 
-1. Copy .ssh/deploy.pub to /home/deploy/authorized_keys on the host machine.
+   ```
+   ssh -F .ssh/config deploy@cygni exit
+   echo $?
+   ```
+
+1. Make sure the deploy user has sufficient rights to create and edit and start a systemd service called `cygni`. This will be done by assigning ownership of the systemd unit file and the directory we will use to store our app deployments.
+
+   ```
+   ssh -t -F .ssh/config admin@cygni "\
+      sudo touch /etc/systemd/system/cygni.service && \
+      sudo chown deploy:deployers /etc/systemd/system/cygni.service && \
+      sudo chmod 664 /etc/systemd/system/cygni.service && \
+      sudo mkdir -p /opt/cygni-competence-deploy && \
+      sudo chown deploy:deployers /opt/cygni-competence-deploy"
+   ```
+
+1. Finally, the deployers group need to have passwordless permissions to reload the systemd unit and restart the service.
+
+   ```
+   DEPLOY_SUDOERS="%deployers ALL=NOPASSWD:/bin/systemctl daemon-reload, /bin/systemctl restart cygni"
+   ssh -t -F .ssh/config admin@cygni "
+      echo \"$DEPLOY_SUDOERS\" | sudo visudo --check -f -
+      echo \"$DEPLOY_SUDOERS\" | sudo EDITOR=\"tee\" visudo -f /etc/sudoers.d/10-setup-deploy"
+   ```
 
 ### Deployment
 
-We need to modify our deploy script so that it uses the provided ssh-keys. This can be done with the `-i` and `-o` flags to ssh.
+The script in [deploy.sh](./scripts/deploy.sh) are essentially the same steps as performed in the basic deployment from local machine. But it uses the `deploy` user for deploying the application.
 
-For example:
+```bash
+#!/bin/bash
+set -e
 
+DEPLOYMENT_DIR=/opt/cygni-competence-deploy/app_$(date +%Y%m%d_%H%M%S)
+
+if test -f .ssh/config; then
+    echo ".ssh/config already exists"
+else
+    echo ".ssh/config does not exist, writing from env"
+
+    mkdir -p .ssh
+    echo "$SSH_PRIVATE_KEY" > ./.ssh/deploy
+    echo "$SSH_KNOWN_HOSTS" > ./.ssh/known_hosts
+    chmod 600 .ssh/deploy
+
+    echo "Host cygni
+    HostName $SERVER
+    IdentityFile $(realpath ./.ssh/deploy)
+    UserKnownHostsFile $(realpath ./.ssh/known_hosts)
+    " | tee ./.ssh/config
+fi
+
+# prepare
+npm ci
+npm test
+npm prune --production
+
+# copy
+tar -czf - src/ node_modules/ package.json | ssh -F .ssh/config deploy@cygni "mkdir -p $DEPLOYMENT_DIR; tar zxf - --directory=$DEPLOYMENT_DIR"
+
+# systemd
+echo "
+[Unit]
+Description=Cygni Competence Deploy
+
+[Service]
+User=cygni
+ExecStart=/usr/bin/env npm start
+Environment=NODE_ENV=production
+Environment=PORT=8080
+WorkingDirectory=$DEPLOYMENT_DIR
+
+[Install]
+WantedBy=multi-user.target
+" | ssh -F .ssh/config deploy@cygni "tee /etc/systemd/system/cygni.service > /dev/null"
+
+ssh -F .ssh/config deploy@cygni "sudo systemctl daemon-reload; sudo systemctl restart cygni"
 ```
-SSH_OPTS="-i ./.ssh/deploy -o UserKnownHostsFile=./.ssh/known_hosts"
 
-ssh $SSH_OPTS deploy@<SERVER> "<cmd>"
-```
+1. Try to run the script once locally to make sure it works.
 
-### CI-server
+   ```
+   ./scripts/deploy.sh
+   ```
+
+   (Tip: to actually see that a new version has been deployed, you can edit `index.js`)
 
 1. Upload .ssh/deploy and .ssh/known_hosts as github secrets.
    Settings -> Secrets -> Environment Secrets
@@ -203,42 +330,29 @@ ssh $SSH_OPTS deploy@<SERVER> "<cmd>"
 
 1. Create a new basic github action that imports secrets and executes the deploy script.
 
-   The first step needs to grab the secrets and write them to the file system.
-
-   ```
-   - name: Secrets
-     run: |
-        mkdir -p .ssh
-        echo "$SSH_PRIVATE_KEY" > .ssh/deploy
-        sudo chmod 600 .ssh/deploy
-        echo "$SSH_KNOWN_HOSTS" > .ssh/known_hosts
+   ```yaml
+   - name: Deploy
+     run: ./scripts/deploy.sh
      shell: bash
      env:
-        SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
-        SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
-   ```
-
-   The second step can simply execute the script.
-
-   ```
-   - name: Deploy
-     run: ./01-scripts/deploy.sh
-     shell: bash
+       SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+       SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
+       SERVER: "68.183.221.185"
    ```
 
 ## Continue...
 
 - Step XX - reverse-proxy - setup reverse proxy HAProxy/Nginx/Traefik
-  - cert ssl-termination
-  - zero downtime deployment
+- cert ssl-termination
+- zero downtime deployment
 - Step XX - multiple environments - test/staging/prod
-  - test master
-  - tag -> deploy staging
-  - manuellt -> deploy tag (måste finnas en tag som är deployad på stage)
-  - samma maskin
+- test master
+- tag -> deploy staging
+- manuellt -> deploy tag (måste finnas en tag som är deployad på stage)
+- samma maskin
 - Step XX - rensa bort gamla deployments
 
-  - t.ex. max 10 gamla deployments, titta på cron
+- t.ex. max 10 gamla deployments, titta på cron
 
 - TODO: ssh profiler, istället för att lägga i .ssh
 - TODO: deploy ska bara kunna köra vissa kommandon.
@@ -246,15 +360,15 @@ ssh $SSH_OPTS deploy@<SERVER> "<cmd>"
 - TODO: Förtydliga vad som körs på server/local
 
 - TODO: prereqs
-  - forka repo (dubbelkolla att GA funkar)
+- forka repo (dubbelkolla att GA funkar)
 - TODO: presentera saker
-  - CI/CD
-  - översikt/målbild
-  - vad kursen inte tar hand om
-    - race conditions
-    - provisionering
-    - Specifika CI servers
-  - systemd
-  - ssh
-  - sudo
-  - förklara script
+- CI/CD
+- översikt/målbild
+- vad kursen inte tar hand om
+- race conditions
+- provisionering
+- Specifika CI servers
+- systemd
+- ssh
+- sudo
+- förklara script
