@@ -41,13 +41,13 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Set up a variable containing your host servers IP adress, this will make it easier to copy-paste commands later on.
 
-   ```
+   ```bash
    export SERVER=<SERVER-IP>
    ```
 
 1. Create an SSH-key that we will use for our new admin account.
 
-   ```
+   ```bash
    mkdir -p .ssh
    ssh-keyscan $SERVER > .ssh/known_hosts
    ssh-keygen -f .ssh/admin
@@ -55,7 +55,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Create a new SSH config file that we will use during the exercise.
 
-   ```
+   ```bash
    echo "
    Host cygni
       HostName $SERVER
@@ -74,13 +74,13 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Copy public key to server
 
-   ```
+   ```bash
    scp -F .ssh/config .ssh/admin.pub root@cygni:/tmp/admin.pub
    ```
 
 1. Connect to the server and create the new user account
 
-   ```
+   ```bash
    ssh -t -F .ssh/config root@cygni "\
       id -u admin && deluser admin && rm -rf /home/admin && \
       adduser admin --ingroup sudo --gecos \"\" && \
@@ -92,26 +92,26 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. After this, ssh access should be enabled for the admin user. Try it out:
 
-   ```
+   ```bash
    ssh -F .ssh/config admin@cygni "sudo -l"
    ```
 
 1. Since we now have an admin account with sudo priviliges, we should disable root login through ssh.
 
-   ```
+   ```bash
    echo "
    PermitRootLogin no
    PasswordAuthentication no
    " | ssh -F .ssh/config admin@cygni "cat - > /tmp/sshd_config"
    ```
 
-   ```
+   ```bash
    ssh -t -F .ssh/config admin@cygni "sudo mv /tmp/sshd_config /etc/ssh/sshd_config.d/setup.conf && sudo systemctl restart sshd"
    ```
 
 1. Make sure you cannot login as root anymore. You should get an error similar to `root@xx.xx.xx.xx: Permission denied (publickey).`
 
-   ```
+   ```bash
    ssh -F .ssh/config admin@cygni exit
    ```
 
@@ -142,7 +142,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Create a system user that we will use to run the service
 
-   ```
+   ```bash
    ssh -t -F .ssh/config admin@cygni "sudo adduser --system cygni"
    ```
 
@@ -150,7 +150,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Prepare application by installing dependencies, testing etc..
 
-   ```
+   ```bash
    npm ci
    npm test
    npm prune --production
@@ -158,7 +158,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Copy application to host machine.
 
-   ```
+   ```bash
    DEPLOYMENT_NAME=app_$(date +%Y%m%d_%H%M%S)
    DEPLOYMENT_DIR=/opt/cygni-competence-deploy/$DEPLOYMENT_NAME
 
@@ -174,7 +174,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Create/edit the systemd service called `cygni`.
 
-   ```
+   ```bash
    echo "
    [Unit]
    Description=Cygni Competence Deploy
@@ -196,13 +196,13 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Reload the unit and restart the service.
 
-   ```
+   ```bash
    ssh -t -F .ssh/config admin@cygni "sudo systemctl daemon-reload && sudo systemctl restart cygni"
    ```
 
 1. The server should be up and running now. Try it out
 
-   ```
+   ```bash
    curl $SERVER:8080
    ```
 
@@ -212,19 +212,19 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Create a new ssh key to use for deployments
 
-   ```
+   ```bash
    ssh-keygen -f .ssh/deploy
    ```
 
 1. Copy the public key to the server
 
-   ```
+   ```bash
    scp -F .ssh/config .ssh/deploy.pub admin@cygni:/tmp/deploy.pub
    ```
 
 1. Create the user
 
-   ```
+   ```bash
    ssh -t -F .ssh/config admin@cygni "\
       sudo addgroup deployers && \
       sudo adduser deploy --disabled-password --ingroup deployers --gecos "" && \
@@ -236,14 +236,14 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Now, you can login as the user `deploy` on the server. Verify by
 
-   ```
+   ```bash
    ssh -F .ssh/config deploy@cygni exit
    echo $?
    ```
 
 1. Make sure the deploy user has sufficient rights to create and edit and start a systemd service called `cygni`. This will be done by assigning ownership of the systemd unit file and the directory we will use to store our app deployments.
 
-   ```
+   ```bash
    ssh -t -F .ssh/config admin@cygni "\
       sudo touch /etc/systemd/system/cygni.service && \
       sudo chown deploy:deployers /etc/systemd/system/cygni.service && \
@@ -254,7 +254,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 1. Finally, the deployers group need to have passwordless permissions to reload the systemd unit and restart the service.
 
-   ```
+   ```bash
    DEPLOY_SUDOERS="%deployers ALL=NOPASSWD:/bin/systemctl daemon-reload, /bin/systemctl restart cygni"
    ssh -t -F .ssh/config admin@cygni "
       echo \"$DEPLOY_SUDOERS\" | sudo visudo --check -f -
@@ -317,7 +317,7 @@ ssh -F .ssh/config deploy@cygni "sudo systemctl daemon-reload; sudo systemctl re
 
 1. Try to run the script once locally to make sure it works.
 
-   ```
+   ```bash
    ./scripts/deploy.sh
    ```
 
