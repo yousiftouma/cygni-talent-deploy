@@ -19,4 +19,5 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
           SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
-          SERVER: "68.183.221.185"
+          SERVER: "192.46.239.99"
+

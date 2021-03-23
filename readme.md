@@ -63,6 +63,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
    Match user root
       PasswordAuthentication yes
+      IdentityFile $(realpath ./.ssh/admin)
 
    Match user admin
       IdentityFile $(realpath ./.ssh/admin)
@@ -72,7 +73,13 @@ Before involving any CI-server, we will make sure we can automate deployment fro
    " > ./.ssh/config
    ```
 
-1. Copy public key to server
+1. Copy the admin key to enable ssh login using the ssh key. This will save us having to type the root password on each access during our setup.
+
+   ```bash
+   ssh-copy-id -i .ssh/admin.pub -F .ssh/config root@cygni
+   ```
+
+1. Before creating the new admin user, copy the same public key to server.
 
    ```bash
    scp -F .ssh/config .ssh/admin.pub root@cygni:/tmp/admin.pub
