@@ -16,6 +16,34 @@ The goal of this course is to be able to set up simple automated deployments fro
 
 The purpose is to gain knowledge of how continuous deployments work under the hood. We will focus on automating all of the tasks. Scripts should be idempotent, meaning we should be able to run them repetetively without changing the result and without errors.
 
+## Agenda
+
+- Presentation CI/CD
+- Walk through step 00
+- Do step 00 (X min)
+
+- Walk through step 01
+- Do step 01 (Y min)
+
+- Step 02 - reverse-proxy - HAProxy/Nginx/Traefik
+
+  - What is HAProxy (presentation)
+  - Install haproxy
+  - Follow guide to setup simple http proxy to TODO: find guide or give a tip on google search
+  - ufw disable 8080
+
+- Step 03 - support different environments - test/staging/prod
+
+  - modify deploy script to support different deployment directories and systemd services
+  - /opt/cygni-talent-deploy_test/app_date -> 8081
+  - /opt/cygni-talent-deploy_prod/app_date -> 8080
+  - Kanske <SERVER>:80/\_test -> 8081
+  - Kanske <SERVER>:80 -> 8080
+
+- TODO: Script för att rätta allas servrar
+  - Rätt portar öppna
+  - Inte ssh:a in som root
+
 ## TODO: Non-goals
 
 TODO: provisioning, ci servers
@@ -30,6 +58,32 @@ Why do we need to know this?
 
 - Fork this repository to your own GitHub account
 - `ssh` client installed on your machine
+- Terminal installed
+  - Windows WSL
+  -
+- node v14+ with npm
+
+TODO(emil): Add list and links
+
+<!-- Dom här linuxkommandona behöver du förstå och kunna göra lokalt:
+Lokalt
+ssh
+ssh-copy-id
+ssh-keygen
+tar
+echo
+scp
+
+På maskinen
+|
+Tee
+Mkdir
+Chmod
+Systemctl
+curl
+Sudo
+Touch
+Chown -->
 
 ## Step 00 - basic deployment
 
@@ -46,6 +100,8 @@ Before involving any CI-server, we will make sure we can automate deployment fro
    ```
 
 1. Create an SSH-key that we will use for our new admin account.
+
+   TODO: Enter a passphrase
 
    ```bash
    mkdir -p .ssh
@@ -348,7 +404,6 @@ ssh -F .ssh/config deploy@cygni "sudo systemctl daemon-reload; sudo systemctl re
 
 ## Continue...
 
-- Step XX - reverse-proxy - setup reverse proxy HAProxy/Nginx/Traefik
 - cert ssl-termination
 - zero downtime deployment
 - Step XX - multiple environments - test/staging/prod
