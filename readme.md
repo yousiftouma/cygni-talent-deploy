@@ -62,6 +62,7 @@ Why do we need to know this?
   - Windows WSL
   -
 - node v14+ with npm
+- systemd: https://www.digitalocean.com/community/tutorials/understanding-systemd-units-and-unit-files
 
 TODO(emil): Add list and links
 
