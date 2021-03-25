@@ -62,6 +62,7 @@ Why do we need to know this?
   - Windows WSL
   -
 - node v14+ with npm
+- if on MacOS: brew install coreutils
 - systemd: https://www.digitalocean.com/community/tutorials/understanding-systemd-units-and-unit-files
 
 TODO(emil): Add list and links
@@ -74,6 +75,7 @@ ssh-keygen
 tar
 echo
 scp
+realpath
 
 På maskinen
 |
@@ -134,6 +136,8 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
    ```bash
    ssh-copy-id -i .ssh/admin.pub -F .ssh/config root@cygni
+
+   ssh-copy-id -i .ssh/admin.pub root@$SERVER
    ```
 
 1. Before creating the new admin user, copy the same public key to server.
@@ -273,7 +277,7 @@ Before involving any CI-server, we will make sure we can automate deployment fro
 
 ### Create deploy user
 
-1. Create a new ssh key to use for deployments
+1. Create a new ssh key to use for deployments (no passphrase)
 
    ```bash
    ssh-keygen -f .ssh/deploy
@@ -387,11 +391,11 @@ ssh -F .ssh/config deploy@cygni "sudo systemctl daemon-reload; sudo systemctl re
    (Tip: to actually see that a new version has been deployed, you can edit `index.js`)
 
 1. Upload .ssh/deploy and .ssh/known_hosts as github secrets.
-   Settings -> Secrets -> Environment Secrets
+   Settings -> Secrets -> New repository secret
 
    Select appropriate names for the secrets such as `SSH_PRIVATE_KEY` and `SSH_KNOWN_HOSTS`.
 
-1. Create a new basic github action that imports secrets and executes the deploy script.
+1. Create a new basic github action that imports secrets and executes the deploy script. Remember to change <SERVER_IP> to your server's IP. Var ska detta in, EXAKT alltså! TODO Vi borde väl ta bort den existerande workflowen också?
 
    ```yaml
    - name: Deploy
@@ -400,7 +404,7 @@ ssh -F .ssh/config deploy@cygni "sudo systemctl daemon-reload; sudo systemctl re
      env:
        SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
        SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
-       SERVER: "68.183.221.185"
+       SERVER: "<SERVER_IP>"
    ```
 
 ## Continue...
