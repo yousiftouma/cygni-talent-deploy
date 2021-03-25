@@ -7,6 +7,7 @@ DEPLOY_SUDOERS="%deployers ALL=NOPASSWD:/bin/systemctl daemon-reload, /bin/syste
 
 # Create deployment user with ssh access
 scp -F .ssh/config .ssh/deploy.pub admin@cygni:/tmp/deploy.pub
+
 ssh -t -F .ssh/config admin@cygni "
     set -e
 
@@ -26,13 +27,14 @@ ssh -t -F .ssh/config admin@cygni "
     sudo chown -R deploy /home/deploy/.ssh
     sudo chmod 644 /home/deploy/.ssh/authorized_keys
 
-    echo \"Setting up cygni.service rights\"
+    echo \"Setting up cygni.service\"
     sudo touch /etc/systemd/system/cygni.service
-    sudo chown deploy:deployers /etc/systemd/system/cygni.service
+    sudo chown root:deployers /etc/systemd/system/cygni.service
     sudo chmod 664 /etc/systemd/system/cygni.service
 
     sudo mkdir -p /opt/cygni-competence-deploy
-    sudo chown deploy:deployers /opt/cygni-competence-deploy
+    sudo chown root:deployers /opt/cygni-competence-deploy
+    sudo chmod 775 /opt/cygni-competence-deploy
 
     echo \"$DEPLOY_SUDOERS\" | sudo visudo --check -f -
     echo \"$DEPLOY_SUDOERS\" | sudo EDITOR=\"tee\" visudo -f /etc/sudoers.d/10-setup-deploy

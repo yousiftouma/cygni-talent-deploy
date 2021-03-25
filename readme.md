@@ -309,10 +309,11 @@ Before involving any CI-server, we will make sure we can automate deployment fro
    ```bash
    ssh -t -F .ssh/config admin@cygni "\
       sudo touch /etc/systemd/system/cygni.service && \
-      sudo chown deploy:deployers /etc/systemd/system/cygni.service && \
+      sudo chown root:deployers /etc/systemd/system/cygni.service && \
       sudo chmod 664 /etc/systemd/system/cygni.service && \
       sudo mkdir -p /opt/cygni-competence-deploy && \
-      sudo chown deploy:deployers /opt/cygni-competence-deploy"
+      sudo chown root:deployers /opt/cygni-competence-deploy && \
+      sudo chmod 755 /opt/cygni-competence-deploy"
    ```
 
 1. Finally, the deployers group need to have passwordless permissions to reload the systemd unit and restart the service.
