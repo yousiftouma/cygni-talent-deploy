@@ -219,7 +219,7 @@ export DEPLOY_USER=<USERNAME>
 ./scripts/deploy.sh
 ```
 
-# Steg 7 - Deploya från github
+# Steg 7 - Skapa en användare för github
 
 ```
 SERVER> sudo adduser github --disabled-password
@@ -248,3 +248,7 @@ SERVER> sudo mv ~/id_github.pub /home/github/.ssh/authorized_keys
 SERVER> sudo chown github:github /home/github/.ssh/authorized_keys
 SERVER> sudo chmod 644 /home/github/.ssh/authorized_keys
 ```
+
+# Steg 8 - Skapa en github action
+
+TODO: Lägg till secrets och jobs
