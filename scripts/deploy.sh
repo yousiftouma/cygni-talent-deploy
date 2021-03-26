@@ -1,34 +1,14 @@
 #!/bin/bash
 set -e
 
-DEPLOYMENT_DIR=/opt/cygni-competence-deploy/app_$(date +%Y%m%d_%H%M%S)
+HOST=$DEPLOY_USER@$SERVER
+DEPLOYMENT_NAME=app_$(date +%Y%m%d_%H%M%S)
+DEPLOYMENT_DIR=/opt/cygni/$DEPLOYMENT_NAME
 
-if test -f .ssh/config; then
-    echo ".ssh/config already exists"
-else
-    echo ".ssh/config does not exist, writing from env"
+tar -czf - src/ package.json package-lock.json | ssh $HOST "mkdir -p $DEPLOYMENT_DIR; tar zxf - --directory=$DEPLOYMENT_DIR"
 
-    mkdir -p .ssh
-    echo "$SSH_PRIVATE_KEY" > ./.ssh/deploy
-    echo "$SSH_KNOWN_HOSTS" > ./.ssh/known_hosts
-    chmod 600 .ssh/deploy
+ssh $HOST "cd $DEPLOYMENT_DIR && npm ci --production"
 
-    echo "Host cygni
-    HostName $SERVER
-    IdentityFile $(realpath ./.ssh/deploy)
-    UserKnownHostsFile $(realpath ./.ssh/known_hosts)
-    " | tee ./.ssh/config
-fi
-
-# prepare
-npm ci
-npm test
-npm prune --production
-
-# copy
-tar -czf - src/ node_modules/ package.json | ssh -F .ssh/config deploy@cygni "mkdir -p $DEPLOYMENT_DIR; tar zxf - --directory=$DEPLOYMENT_DIR"
-
-# systemd
 echo "
 [Unit]
 Description=Cygni Competence Deploy
@@ -42,6 +22,6 @@ WorkingDirectory=$DEPLOYMENT_DIR
 
 [Install]
 WantedBy=multi-user.target
-" | ssh -F .ssh/config deploy@cygni "tee /etc/systemd/system/cygni.service > /dev/null"
+" | ssh $HOST "tee /etc/systemd/system/cygni.service"
 
-ssh -F .ssh/config deploy@cygni "sudo systemctl daemon-reload; sudo systemctl restart cygni"
+ssh $HOST "sudo systemctl daemon-reload && sudo systemctl restart cygni"
