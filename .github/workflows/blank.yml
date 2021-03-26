@@ -35,3 +35,4 @@ jobs:
         env:
           SERVER: "192.46.239.99"
           DEPLOY_USER: "github"
+          BUILD_NUMBER: $GITHUB_RUN_NUMBER
