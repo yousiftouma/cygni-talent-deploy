@@ -48,12 +48,6 @@ The purpose is to gain knowledge of how continuous deployments work under the ho
 
 TODO: provisioning, ci servers
 
-## Rationale
-
-Why do we need to know this?
-
-...
-
 ## Pre requisites
 
 - Fork this repository to your own GitHub account
@@ -86,352 +80,75 @@ Sudo
 Touch
 Chown -->
 
-## Step 00 - basic deployment
+# Exercises
 
-(Target 45-60 minuter)
+## Terminology
 
-Before involving any CI-server, we will make sure we can automate deployment from our own developer machines. The goal is to be able to deploy our application on a fresh VPS without manual intervention.
+<!-- - **server** - the host server
+- ** -->
 
-### Setup admin account on server
+## Step 01 - Set up SSH-access for root user
 
-1. Set up a variable containing your host servers IP adress, this will make it easier to copy-paste commands later on.
+Initially, you will only be able to log in to the server using the root user with the provided password. The first thing we want to do is to enable login using an SSH key. It is easier and more secure.
 
-   ```bash
-   export SERVER=<SERVER-IP>
+1. Create a new ssh key using the tool `ssh-keygen`. You can use the default options when prompted. If you already have an SSH-key on your machine, you can skip this step and just use that key. You will be prompted if you want to overwrite your previous key it **DON'T overwrite it if you already use it for other things**.
+
+1. Add an entry for your server in your ~/.ssh/config file. This enables us to set up a friendly name and some convenient config for our server. Check `man ssh_config` for more information.
+
+   ```
+   Host cygni-deploy
+      HostName <SERVER>
    ```
 
-1. Create an SSH-key that we will use for our new admin account.
+   Note, if you know how to, you can skip this step or use another file for this config.
 
-   TODO: Enter a passphrase
+1. Copy your public SSH-key to the server to allow root login using SSH. The simplest way is to use the utility `ssh-copy-id`. The following command will copy your public keys from `~/.ssh/` into `/root/.ssh/authorized_keys` on the server. Check `man ssh-copy-id` for more information. You will be prompted for the root password.
 
-   ```bash
-   mkdir -p .ssh
-   ssh-keyscan $SERVER > .ssh/known_hosts
-   ssh-keygen -f .ssh/admin
+   ```
+   ssh-copy-id root@cygni-deploy
    ```
 
-1. Create a new SSH config file that we will use during the exercise.
+1. Now, you should be able to log in to the server using your SSH key instead of password. The command for logging in is simply `ssh <USER>@<SERVER>`. As there are no other users at the moment, you have to log in as the `root` user.
 
-   ```bash
-   echo "
-   Host cygni
-      HostName $SERVER
-      UserKnownHostsFile $(realpath ./.ssh/known_hosts)
-
-   Match user root
-      PasswordAuthentication yes
-      IdentityFile $(realpath ./.ssh/admin)
-
-   Match user admin
-      IdentityFile $(realpath ./.ssh/admin)
-
-   Match user deploy
-      IdentityFile $(realpath ./.ssh/deploy)
-   " > ./.ssh/config
+   ```
+   ssh root@cygni-deploy
    ```
 
-1. Copy the admin key to enable ssh login using the ssh key. This will save us having to type the root password on each access during our setup.
+## Step 02 - Create admin user
 
-   ```bash
-   ssh-copy-id -i .ssh/admin.pub -F .ssh/config root@cygni
+It is widely considered bad practise to use directly use root for administrative tasks on linux servers. The root user has permissions to do anything without restrictions. The recommended approach is to create an admin user that has priviliges to run commands _as_ root using `sudo`. See `man sudo` for more information.
+
+Usually, admin accounts should be personal. They are then given administrative powers by belonging to a certain group. In this case, the group will be `sudo`. The `sudo` group by default has permissions to run any command as any user, as long as the user provides their password.
+
+1. Create a new user with default settings. The simplest way is to use the `adduser`. See `man adduser`. Make sure you remember the password provided.
+
+1. Add the user to the group `sudo`.
+
+1. You can check which groups a user belongs to using the command.
+
+   ```
+   groups <USERNAME>
    ```
 
-1. Before creating the new admin user, copy the same public key to server.
+   The expected output is `<USERNAME>: <USERNAME> sudo`. As explained in the documentation `adduser` will create a group with the same name as the created user by default.
 
-   ```bash
-   scp -F .ssh/config .ssh/admin.pub root@cygni:/tmp/admin.pub
+1. Make sure that the new /home directory have been created correctly.
+
+   ```
+   ls -la /home
+   drwxr-xr-x  5 root        root         4096 Mar 26 12:00 .
+   drwxr-xr-x 20 root        root         4096 Mar 26 12:00 ..
+   drwxr-xr-x  7 <USERNAME>  <USERGROUP>  4096 Mar 26 12:00 <USERNAME>
    ```
 
-1. Connect to the server and create the new user account
+   <USERNAME> and <USERGROUP> should be the owners of the /home/<USERNAME> directory. If not, something might have gone a little wrong.
 
-   ```bash
-   ssh -t -F .ssh/config root@cygni "\
-      adduser admin --ingroup sudo --gecos \"\" && \
-      mkdir -p /home/admin/.ssh && \
-      mv /tmp/admin.pub /home/admin/.ssh/authorized_keys && \
-      chown admin /home/admin/.ssh && \
-      chmod 644 /home/admin/.ssh/authorized_keys"
-   ```
+## Step 03 - Set up SSH access for admin user
 
-1. After this, ssh access should be enabled for the admin user. Try it out:
+There is a new admin user, but we can still only access the server by logging in as root through SSH. To give yourself access to login as the admin user, we need to add your public key to that users own `authorized_keys` file. Because we already added our public key to the root users authorized keys, the simplest way is to copy the `/root/.ssh/authorized_keys` to `/home/<USERNAME>/.ssh`.
 
-   ```bash
-   ssh -t -F .ssh/config admin@cygni "sudo -l"
-   ```
+It is also important that the correct permissions are set on the `authorized_keys` file. It should be _owned_ by the applicable user.
 
-1. Since we now have an admin account with sudo priviliges, we should disable root login through ssh.
+1. Copy `/root/.ssh/authorized_keys` to `/home/<USERNAME>/.ssh/authorized_keys` on the server.
 
-   ```bash
-   echo "
-   PermitRootLogin no
-   PasswordAuthentication no
-   " | ssh -F .ssh/config admin@cygni "cat - > /tmp/sshd_config"
-   ```
-
-   ```bash
-   ssh -t -F .ssh/config admin@cygni "sudo mv /tmp/sshd_config /etc/ssh/sshd_config.d/setup.conf && sudo systemctl restart sshd"
-   ```
-
-1. Make sure you cannot login as root anymore. You should get an error similar to `root@xx.xx.xx.xx: Permission denied (publickey).`
-
-   ```bash
-   ssh -F .ssh/config root@cygni exit
-   ```
-
-### Setup dependencies and firewall
-
-1. Install dependencies
-
-   ```bash
-   ssh -t -F .ssh/config admin@cygni "\
-      curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - && \
-      sudo apt update && \
-      sudo apt install -y ufw nodejs"
-   ```
-
-1. Setup firewall rules
-
-   ```bash
-   ssh -t -F .ssh/config admin@cygni "\
-      sudo ufw default deny incoming && \
-      sudo ufw default allow outgoing && \
-      sudo ufw allow ssh && \
-      sudo ufw allow http && \
-      sudo ufw allow in 8080/tcp && \
-      sudo ufw --force enable"
-   ```
-
-### Create system user
-
-1. Create a system user that we will use to run the service
-
-   ```bash
-   ssh -t -F .ssh/config admin@cygni "sudo adduser --system cygni"
-   ```
-
-### Deployment
-
-1. Prepare application by installing dependencies, testing etc..
-
-   ```bash
-   npm ci
-   npm test
-   npm prune --production
-   ```
-
-1. Copy application to host machine.
-
-   ```bash
-   DEPLOYMENT_NAME=app_$(date +%Y%m%d_%H%M%S)
-   DEPLOYMENT_DIR=/opt/cygni-competence-deploy/$DEPLOYMENT_NAME
-
-   tar -czf tmp_$DEPLOYMENT_NAME.tar.gz src/ node_modules/ package.json
-
-   scp -F .ssh/config tmp_$DEPLOYMENT_NAME.tar.gz admin@cygni:/tmp/$DEPLOYMENT_NAME.tar.gz
-
-   ssh -t -F .ssh/config admin@cygni "\
-      sudo mkdir -p $DEPLOYMENT_DIR && \
-      sudo tar zxf /tmp/$DEPLOYMENT_NAME.tar.gz --directory=$DEPLOYMENT_DIR && \
-      rm /tmp/$DEPLOYMENT_NAME.tar.gz"
-   ```
-
-1. Create/edit the systemd service called `cygni`.
-
-   ```bash
-   echo "
-   [Unit]
-   Description=Cygni Competence Deploy
-
-   [Service]
-   User=cygni
-   ExecStart=/usr/bin/env npm start
-   Environment=NODE_ENV=production
-   Environment=PORT=8080
-   WorkingDirectory=$DEPLOYMENT_DIR
-
-   [Install]
-   WantedBy=multi-user.target
-   " > tmp_cygni.service
-
-   scp -F .ssh/config tmp_cygni.service admin@cygni:/tmp/cygni.service
-   ssh -t -F .ssh/config admin@cygni "sudo mv /tmp/cygni.service /etc/systemd/system/cygni.service"
-   ```
-
-1. Reload the unit and restart the service.
-
-   ```bash
-   ssh -t -F .ssh/config admin@cygni "sudo systemctl daemon-reload && sudo systemctl restart cygni"
-   ```
-
-1. The server should be up and running now. Try it out
-
-   ```bash
-   curl $SERVER:8080
-   ```
-
-## Step 01 - continuous deployment
-
-### Create deploy user
-
-1. Create a new ssh key to use for deployments
-
-   ```bash
-   ssh-keygen -f .ssh/deploy
-   ```
-
-1. Copy the public key to the server
-
-   ```bash
-   scp -F .ssh/config .ssh/deploy.pub admin@cygni:/tmp/deploy.pub
-   ```
-
-1. Create the user
-
-   ```bash
-   ssh -t -F .ssh/config admin@cygni "\
-      sudo addgroup deployers && \
-      sudo adduser deploy --disabled-password --ingroup deployers --gecos \"\" && \
-      sudo mkdir -p /home/deploy/.ssh && \
-      sudo mv /tmp/deploy.pub /home/deploy/.ssh/authorized_keys && \
-      sudo chown -R deploy /home/deploy/.ssh && \
-      sudo chmod 644 /home/deploy/.ssh/authorized_keys"
-   ```
-
-1. Now, you can login as the user `deploy` on the server. Verify by
-
-   ```bash
-   ssh -F .ssh/config deploy@cygni exit
-   echo $?
-   ```
-
-1. Make sure the deploy user has sufficient rights to create and edit and start a systemd service called `cygni`. This will be done by assigning ownership of the systemd unit file and the directory we will use to store our app deployments.
-
-   ```bash
-   ssh -t -F .ssh/config admin@cygni "\
-      sudo touch /etc/systemd/system/cygni.service && \
-      sudo chown root:deployers /etc/systemd/system/cygni.service && \
-      sudo chmod 664 /etc/systemd/system/cygni.service && \
-      sudo mkdir -p /opt/cygni-competence-deploy && \
-      sudo chown root:deployers /opt/cygni-competence-deploy && \
-      sudo chmod 755 /opt/cygni-competence-deploy"
-   ```
-
-1. Finally, the deployers group need to have passwordless permissions to reload the systemd unit and restart the service.
-
-   ```bash
-   DEPLOY_SUDOERS="%deployers ALL=NOPASSWD:/bin/systemctl daemon-reload, /bin/systemctl restart cygni"
-   ssh -t -F .ssh/config admin@cygni "
-      echo \"$DEPLOY_SUDOERS\" | sudo visudo --check -f -
-      echo \"$DEPLOY_SUDOERS\" | sudo EDITOR=\"tee\" visudo -f /etc/sudoers.d/10-setup-deploy"
-   ```
-
-### Deployment
-
-The script in [deploy.sh](./scripts/deploy.sh) is essentially the same steps as performed in the basic deployment from local machine. But it uses the `deploy` user for deploying the application.
-
-```bash
-#!/bin/bash
-set -e
-
-DEPLOYMENT_DIR=/opt/cygni-competence-deploy/app_$(date +%Y%m%d_%H%M%S)
-
-if test -f .ssh/config; then
-    echo ".ssh/config already exists"
-else
-    echo ".ssh/config does not exist, writing from env"
-
-    mkdir -p .ssh
-    echo "$SSH_PRIVATE_KEY" > ./.ssh/deploy
-    echo "$SSH_KNOWN_HOSTS" > ./.ssh/known_hosts
-    chmod 600 .ssh/deploy
-
-    echo "Host cygni
-    HostName $SERVER
-    IdentityFile $(realpath ./.ssh/deploy)
-    UserKnownHostsFile $(realpath ./.ssh/known_hosts)
-    " | tee ./.ssh/config
-fi
-
-# prepare
-npm ci
-npm test
-npm prune --production
-
-# copy
-tar -czf - src/ node_modules/ package.json | ssh -F .ssh/config deploy@cygni "mkdir -p $DEPLOYMENT_DIR; tar zxf - --directory=$DEPLOYMENT_DIR"
-
-# systemd
-echo "
-[Unit]
-Description=Cygni Competence Deploy
-
-[Service]
-User=cygni
-ExecStart=/usr/bin/env npm start
-Environment=NODE_ENV=production
-Environment=PORT=8080
-WorkingDirectory=$DEPLOYMENT_DIR
-
-[Install]
-WantedBy=multi-user.target
-" | ssh -F .ssh/config deploy@cygni "tee /etc/systemd/system/cygni.service > /dev/null"
-
-ssh -F .ssh/config deploy@cygni "sudo systemctl daemon-reload; sudo systemctl restart cygni"
-```
-
-1. Try to run the script once locally to make sure it works.
-
-   ```bash
-   ./scripts/deploy.sh
-   ```
-
-   (Tip: to actually see that a new version has been deployed, you can edit `index.js`)
-
-1. Upload .ssh/deploy and .ssh/known_hosts as github secrets.
-   Settings -> Secrets -> Environment Secrets
-
-   Select appropriate names for the secrets such as `SSH_PRIVATE_KEY` and `SSH_KNOWN_HOSTS`.
-
-1. Create a new basic github action that imports secrets and executes the deploy script.
-
-   ```yaml
-   - name: Deploy
-     run: ./scripts/deploy.sh
-     shell: bash
-     env:
-       SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
-       SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
-       SERVER: "68.183.221.185"
-   ```
-
-## Continue...
-
-- cert ssl-termination
-- zero downtime deployment
-- Step XX - multiple environments - test/staging/prod
-- test master
-- tag -> deploy staging
-- manuellt -> deploy tag (måste finnas en tag som är deployad på stage)
-- samma maskin
-- Step XX - rensa bort gamla deployments
-
-- t.ex. max 10 gamla deployments, titta på cron
-
-- TODO: ssh profiler, istället för att lägga i .ssh
-- TODO: deploy ska bara kunna köra vissa kommandon.
-- TODO: hitta en guide för nginx som rev-proxy
-- TODO: Förtydliga vad som körs på server/local
-
-- TODO: prereqs
-- forka repo (dubbelkolla att GA funkar)
-- TODO: presentera saker
-- CI/CD
-- översikt/målbild
-- vad kursen inte tar hand om
-- race conditions
-- provisionering
-- Specifika CI servers
-- systemd
-- ssh
-- sudo
-- förklara script
+1. Make sure the correct permissions are set on the `authorized_keys` file. It The ssh is particular about
