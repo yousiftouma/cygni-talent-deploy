@@ -18,7 +18,7 @@ User=cygni
 ExecStart=/usr/bin/env npm start
 Environment=NODE_ENV=production
 Environment=PORT=8080
-Environment=BUILD_NUMBER=${BUILD_NUMBER:-0}
+Environment=BUILD_NUMBER=${GITHUB_RUN_NUMBER:-0}
 WorkingDirectory=$DEPLOYMENT_DIR
 
 [Install]

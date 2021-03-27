@@ -30,9 +30,9 @@ jobs:
           SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
 
       - name: Deploy
-        run: ./scripts/deploy.sh
+        run: |
+          ./scripts/deploy.sh
         shell: bash
         env:
           SERVER: "192.46.239.99"
           DEPLOY_USER: "github"
-          BUILD_NUMBER: $GITHUB_RUN_NUMBER
