@@ -1,4 +1,4 @@
-# Steg 1 - Sätt upp SSH-access för root
+# Steg 01 - Sätt upp SSH-access för root
 
 Om ni inte redan har en, skapa en SSH-nyckel.
 
@@ -25,7 +25,7 @@ SSH-a in på servern
 ssh root@cygni-deploy
 ```
 
-# Steg 2 - Skapa användare
+# Steg 02 - Skapa användare
 
 Inne på servern, skapa admin användare tillhörande sudo.
 
@@ -45,6 +45,8 @@ Visa vilka grupper användaren tillhör (adduser skapar grupp med namn <USERNAME
 groups <USERNAME>
 ```
 
+# Steg 03 - Setup SSH access
+
 Autorisera dig själv att logga in som nya användaren, enklast är att kopiera `authorized_keys` från root-användaren.
 
 ```bash
@@ -56,7 +58,8 @@ Sätt rätt ägarskap och rättigheter
 
 ```bash
 chown -R <USERNAME>:<USERNAME> /home/<USERNAME>/.ssh
-chmod 644 /home/<USERNAME>/.ssh/authorized_keys
+chmod 700 /home/<USERNAME>/.ssh
+chmod 600 /home/<USERNAME>/.ssh/authorized_keys
 ```
 
 Logga ut som root och lägg testa logga in som den nya användaren.
@@ -65,7 +68,7 @@ Logga ut som root och lägg testa logga in som den nya användaren.
 ssh <USERNAME>@cygni-deploy
 ```
 
-# Steg 3 - Spärra root
+# Steg 04 - Secure SSH
 
 OBS `sshd_config.d` INTE `ssh_config.d`
 
@@ -92,7 +95,7 @@ Logga ut eller byt terminal se till att du får permission denied
 ssh root@cygni-deploy
 ```
 
-# Steg 4 - Brandvägg
+# Steg 05 - Brandvägg
 
 Inne på servern
 
@@ -102,26 +105,25 @@ sudo apt install ufw
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow ssh
-sudo ufw allow http
 sudo ufw allow in 8080/tcp
 
 sudo ufw enable
 ```
 
-# Steg 4 - Node.js
+# Steg 06 - Dependencies
+
+```
+SERVER> curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+SERVER> sudo apt install nodejs
+```
+
+# Steg 07 - Service
 
 Börja med att kopiera över appen från _lokal_ maskin
 
 ```bash
 tar -czf tmp_cygni-service.tar.gz src/ package.json package-lock.json
 scp tmp_cygni-service.tar.gz <USERNAME>@cygni-deploy:~/cygni-service.tar.gz
-```
-
-In på servern igen, install nodejs
-
-```
-curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-sudo apt install nodejs
 ```
 
 Packa upp appen på ett väl valt ställe
@@ -244,9 +246,10 @@ Navigera till hemkatalogen och flytta filen till /home/github
 ```sh
 SERVER> sudo mkdir -p /home/github/.ssh
 SERVER> sudo chown github:github /home/github/.ssh
+SERVER> sudo chmod 700 /home/github/.ssh
 SERVER> sudo mv ~/id_github.pub /home/github/.ssh/authorized_keys
 SERVER> sudo chown github:github /home/github/.ssh/authorized_keys
-SERVER> sudo chmod 644 /home/github/.ssh/authorized_keys
+SERVER> sudo chmod 600 /home/github/.ssh/authorized_keys
 ```
 
 # Steg 8 - Skapa en github action
