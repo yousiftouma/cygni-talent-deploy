@@ -91,9 +91,9 @@ Chown -->
 
 Initially, you will only be able to log in to the server using the root user with the provided password. The first thing we want to do is to enable login using an SSH key. It is easier and more secure.
 
-1. Create a new ssh key using the tool `ssh-keygen`. You can use the default options when prompted. If you already have an SSH-key on your machine, you can skip this step and just use that key. You will be prompted if you want to overwrite your previous key it **DON'T overwrite it if you already use it for other things**.
+1. On your local machine, create a new ssh key using the tool `ssh-keygen`. You can use the default options when prompted. If you already have an SSH-key on your machine, you can skip this step and just use that key. You will be prompted if you want to overwrite your previous key it **DON'T overwrite it if you already use it for other things**.
 
-1. Add an entry for your server in your ~/.ssh/config file. This enables us to set up a friendly name and some convenient config for our server. Check `man ssh_config` for more information.
+1. On your local machine, add an entry for your server in ~/.ssh/config. This enables us to set up a friendly name and some convenient config for our server. Check `man ssh_config` for more information.
 
    ```
    Host cygni-deploy
@@ -102,13 +102,13 @@ Initially, you will only be able to log in to the server using the root user wit
 
    Note, if you know how to, you can skip this step or use another file for this config.
 
-1. Copy your public SSH-key to the server to allow root login using SSH. The simplest way is to use the utility `ssh-copy-id`. The following command will copy your public keys from `~/.ssh/` into `/root/.ssh/authorized_keys` on the server. Check `man ssh-copy-id` for more information. You will be prompted for the root password.
+1. On your local machine, copy your public SSH-key to the server to allow root login using SSH. The simplest way is to use the utility `ssh-copy-id`. The following command will copy your public keys from `~/.ssh/` into `/root/.ssh/authorized_keys` on the server. Check `man ssh-copy-id` for more information. You will be prompted for the root password.
 
    ```
    ssh-copy-id root@cygni-deploy
    ```
 
-1. Now, you should be able to log in to the server using your SSH key instead of password. The command for logging in is simply `ssh <USER>@<SERVER>`. As there are no other users at the moment, you have to log in as the `root` user.
+1. On your local machine, log in as root on the server using your SSH key.
 
    ```
    ssh root@cygni-deploy
@@ -120,11 +120,11 @@ It is widely considered bad practice to use directly use root for administrative
 
 Usually, admin accounts should be personal. They are then given administrative powers by belonging to a certain group. In this case, the group will be `sudo`. The `sudo` group by default has permissions to run any command as any user, as long as the user provides their password.
 
-1. Create a new user with default settings. The simplest way is to use the `adduser`. See `man adduser`. Make sure you remember the password provided.
+1. On the server, create a new user with default settings. The simplest way is to use the `adduser`. See `man adduser`. Make sure you remember the password provided.
 
-1. Add the user to the group `sudo`.
+1. On the server, add the user to the group `sudo`.
 
-1. You can check which groups a user belongs to using the command.
+1. On the server, check which groups a user belongs to using the command.
 
    ```
    groups <USERNAME>
@@ -132,7 +132,7 @@ Usually, admin accounts should be personal. They are then given administrative p
 
    The expected output is `<USERNAME>: <USERNAME> sudo`. As explained in the documentation `adduser` will create a group with the same name as the created user by default.
 
-1. Make sure that the new /home directory have been created correctly.
+1. On the server, check that a /home directory for the user has been created.
 
    ```
    ls -la /home
@@ -141,7 +141,7 @@ Usually, admin accounts should be personal. They are then given administrative p
    drwxr-xr-x  7 <USERNAME>  <USERGROUP>  4096 Mar 26 12:00 <USERNAME>
    ```
 
-   <USERNAME> and <USERGROUP> should be the owners of the /home/<USERNAME> directory. If not, something might have gone a little wrong.
+   <USERNAME> and <USERGROUP> should be the owners of the /home/<USERNAME> directory. If not, something has gone wrong.
 
 ## Step 03 - Set up SSH access
 
@@ -149,9 +149,9 @@ Give yourself access to login as the admin user. You need to add your public key
 
 It is important that the correct permissions are set on the `authorized_keys` file. First of all, it needs to be owned by the applicable user. In addition, it is recommended that only that user can read and write the file.
 
-1. Copy `/root/.ssh/authorized_keys` to `/home/<USERNAME>/.ssh/authorized_keys` on the server.
+1. On the server, copy `/root/.ssh/authorized_keys` to `/home/<USERNAME>/.ssh/authorized_keys` on the server.
 
-1. Set correct permissions on `/home/<USERNAME>/.ssh` and `~/.ssh/<USERNAME>/authorized_keys`. It should look like this:
+1. On the server, set correct permissions on `/home/<USERNAME>/.ssh` and `~/.ssh/<USERNAME>/authorized_keys`.
 
    ```
    ls -la ~/home/<USERNAME>/.ssh
@@ -160,9 +160,11 @@ It is important that the correct permissions are set on the `authorized_keys` fi
    -rw------- 1 <USERNAME> <USERGROUP>  396 Mar 26 12:00 authorized_keys
    ```
 
-   which means it is owned by <USERNAME> and only <USERNAME> can read or write the file.
+   <USERNAME> and <USERGROUP> are be owners and only <USERNAME> can read or write the file.
 
-1. Log out from the root account and log in as the new user from your local machine.
+1. Exit the SSH session.
+
+1. On your local machine, log in as the new user from your local machine.
 
    If you can not log in, try to find out what is going wrong.
 
@@ -179,20 +181,20 @@ However, all sources agree that permitting login directly as root through SSH is
 
 The SSH server settings are defined in `/etc/ssh/sshd_config`. By default on Ubuntu, files in the directory `/etc/ssh/sshd_config.d/*.conf` are included. See `man sshd_config` on the server for more information.
 
-1. Edit/create `/etc/ssh/sshd_config.d/00-setup.conf` to contain these lines
+1. On the server, edit/create `/etc/ssh/sshd_config.d/00-setup.conf` to contain these lines
 
    ```
    PermitRootLogin no
    PasswordAuthentication no
    ```
 
-1. You need to restart the SSH server to pick up the changes.
+1. On the server, restart the SSH server to pick up the changes.
 
    ```
    sudo systemctl restart sshd
    ```
 
-1. Make sure that you cannot log in as root on the server from your local machine.
+1. On your local machine, make sure that you cannot log in as root on the server.
 
 ## Step 05 - Firewall
 
@@ -386,8 +388,95 @@ Time to enable github to deploy our application. We need to create a new user on
    ssh-keyscan $SERVER > cygni_known_hosts
    ```
 
-1. On your local machine, copy the public key (`cygni_id_github.pub`) to the server using `scp`.
+1. Copy the public key (`cygni_id_github.pub`), from your local machine to the server at `/home/github/.ssh/authorized_keys`.
 
-1. On the server,
+   Remember to set the correct ownership and permissions. See Step 03.
 
-TODO: continue!
+   ```
+   ls -la /home/github/.ssh/
+   total 12
+   drwx------ 2 github github 4096 Mar 26 23:27 .
+   drwxr-xr-x 5 github github 4096 Mar 26 23:48 ..
+   -rw------- 1 github github  568 Mar 26 23:27 authorized_keys
+   ```
+
+1. On your local machine, test the SSH connection
+
+   ```
+   ssh -i ./cygni_id_github github@cygni-deploy
+   ```
+
+1. Upload the key and known hosts as github secrets on your own fork.
+
+   Settings -> Secrets -> New Repository Secret
+
+   Give the secrets approriate names such as `SSH_KNOWN_HOSTS` and `SSH_PRIVATE_KEY`.
+
+1. Create a new github action, follow these links on your repository page
+
+   Actions -> New workflow -> "Skip this and set up a workflow yourself"
+
+   This will generate a skeleton workflow file for you. Walk through the document and try to understand its structure.
+
+   Essentially, we need 4 steps.
+
+   - Checkout code, this step is already in the skeleton file.
+
+   - Setup node.js.
+
+     ```
+     - name: Setup node
+       uses: actions/setup-node@v2
+       with:
+          node-version: "14"
+     ```
+
+   - Setup SSH keys
+
+     ```
+     - name: Setup ssh
+       run: |
+         mkdir -p ~/.ssh
+         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+         echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+         chmod 600 ~/.ssh/id_rsa
+       env:
+         SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+         SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
+     ```
+
+   - Run deploy script
+
+     ```
+     - name: Deploy
+       run: |
+         ./scripts/deploy.sh
+       shell: bash
+       env:
+         SERVER: "<SERVER-IP>"
+         DEPLOY_USER: "github"
+     ```
+
+1. Save and commit the file to master. Now you should be able to see the workflow under the "Actions" tab. If you kept the "workflow_dispatch:" property from the skeleton, you can manually trigger the workflow from the github GUI as well. Move on once you have made sure that the workflow works as expected.
+
+1. On your local machine, pull the repository so that you have the latest commit containing the github workflow locally, then make a change to the response in `index.js`. Push the changes to the remote master branch and follow the workflow progress on github.
+
+1. On your local machine, curl the application and make sure it responds as expected.
+
+# Follow up exercises
+
+If you've finished all the steps above you can pick one of the following extra exercises.
+
+## Set up server maintenance
+
+Set up periodic clean up of the application deployments in `/opt/cygni`. For example
+
+- Every hour, make sure that there are no more than 10 deployments
+
+You can use `crontab` for this.
+
+## Set up multiple environments
+
+For example on push to master, we deploy to a staging environment, but on a tag, we deploy to the production environment.
+
+If you are feeling more ambitious, set up a reverse proxy (haproxy, nginx) in front of the environments.

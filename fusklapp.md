@@ -254,4 +254,45 @@ SERVER> sudo chmod 600 /home/github/.ssh/authorized_keys
 
 # Steg 8 - Skapa en github action
 
-TODO: Lägg till secrets och jobs
+- Ladda upp secrets, skapa jobb
+
+```yml
+name: CI
+
+on:
+  push:
+    branches: [master]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+
+      - run: npm ci
+      - run: npm test
+
+      - name: Setup ssh
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_rsa
+        env:
+          SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+          SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
+
+      - name: Deploy
+        run: |
+          ./scripts/deploy.sh
+        shell: bash
+        env:
+          SERVER: "192.46.239.99"
+          DEPLOY_USER: "github"
+```
