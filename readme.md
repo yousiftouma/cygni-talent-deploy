@@ -82,7 +82,30 @@ Chown -->
 
 # Exercises
 
+## Terminology
+
+- local machine - your own computer
+- server - the server that is hosting the application
+- build server - the server that is test, building and deploy the application
+- admin - the user account with administrative tasks, should be personal
+
 ## Tips and trix
+
+### Reading files on the server
+
+You can use `cat` or `less` to read files on the server.
+
+`cat` will print the file to stdout.
+
+```
+cat /path/to/file
+```
+
+`less` is a program that enables you to scroll through files and search among other things
+
+```
+less /path/to/file
+```
 
 ### Writing files on server
 
@@ -113,50 +136,36 @@ In some cases, it is easier to write to files locally and copy them to the remot
 scp /path/to/localfile user@host:/path/to/remotefile
 ```
 
-## Step 01 - Set up SSH-access for root user
+## Step 01 - Log in to server
 
-Initially, you will be able to log in to the server as `root` using the provided password. The first thing we are going to do enable login using public key authentication. It is easier and more secure. After this step, you will be able to log in to the server without the root password.
+Initially, you will be able to log in to the server as `root` using the provided password. It can be convenient to add an entry for your server in your `~/.ssh/config` file. Check `man ssh_config` for more information.
 
-1. On your local machine, create a new ssh key using the tool `ssh-keygen`.
+For example:
 
-   If you already have an SSH-key that you can use, you can skip this step. Otherwise, you can use the default options when prompted. If you want to, you can choose a different filename or location for your key.
+```
+Host cygni-deploy
+   HostName <SERVER-IP>
+```
 
-   **NOTE** Do not overwrite any of your already existing keys! The program will warn you before that happens.
+will allow us to do
+
+```
+ssh <USER>@cygni-deploy
+```
+
+instead of
+
+```
+ssh <USER>@<SERVER-IP>
+```
 
 1. On your local machine, add an entry for your server in ~/.ssh/config.
 
-   The config file is useful to set up a friendly name and other convenient options for the server. Check `man ssh_config` for more information.
-
-   For example:
-
-   ```
-   Host cygni-deploy
-      HostName <SERVER-IP>
-   ```
-
-   will allow us to do
-
-   ```
-   ssh <USER>@cygni-deploy
-   ```
-
-   instead of
-
-   ```
-   ssh <USER>@<SERVER-IP>
-   ```
-
-1. On your local machine, copy your public SSH-key to the server to allow root login using SSH.
-
-   The simplest way is to use the utility `ssh-copy-id`. Check `man ssh-copy-id` for more information. You will be prompted for the root password on the server.
-
-1. On your local machine, log in as root on the server using your SSH key. The following command should work without being prompted for the root user password.
+1. On your local machine, log in to the server as root. You will be prompted for the root password.
 
    ```
    ssh root@cygni-deploy
    ```
-
-1. On the server, verify the contents of `/root/.ssh/authorized_keys`. It should contain the public key (or keys) that you copied using `ssh-copy-id`. The contents of this file is what determines which keys you can use to log on as root.
 
 ## Step 02 - Create admin user
 
@@ -193,43 +202,42 @@ In most cases, admin accounts should be personal. They are then given administra
    drwxr-xr-x  7 <USERNAME>  <USERGROUP>  4096 Mar 26 12:00 <USERNAME>
    ```
 
-   <USERNAME> and <USERGROUP> should be the owners of the /home/<USERNAME> directory. If not, something has gone wrong.
+   `<USERNAME>` and `<USERGROUP>` should be the owners of the `/home/<USERNAME>` directory. If not, something has gone wrong.
 
-## Step 03 - Set up SSH access
+## Step 03 - Set up public key authentication
 
-In Step 01, you gave yourself access to log in to the server as the `root` user. In this step you will give yourself access to log in as the new admin user as well. To do this, you need to add your public key to that users `authorized_keys` file. Since we already have added our public key to the root users `authorized_keys`, we can just copy `/root/.ssh/authorized_keys` to `/home/<USERNAME>/.ssh/authorized_keys`.
+You will be able to log in to the server as the admin user using your password. However, it is easier and more secure to use public key authentication. It will enable you to log in to the server without providing your password.
 
-It is important that the correct permissions are set on the `authorized_keys` file. It needs to be owned by the applicable user and it is recommended that only that user can read and write to the file.
+1. On your local machine, create a new ssh key using the tool `ssh-keygen`.
 
-1. On the server, copy `/root/.ssh/authorized_keys` to `/home/<USERNAME>/.ssh/authorized_keys`.
+   If you already have an SSH-key that you can use, you can skip this step. Otherwise, you can use the default options when prompted. If you want to, you can choose a different filename or location for your key.
 
-1. On the server, set correct permissions on `/home/<USERNAME>/.ssh` and `~/.ssh/<USERNAME>/authorized_keys`.
+   **NOTE** Do not overwrite any of your already existing keys! The program will warn you before that happens.
 
-   Expected permissions are as follows:
+1. On your local machine, copy your public SSH-key to the server to allow admin login using SSH.
+
+   The simplest way is to use the utility `ssh-copy-id`. Check `man ssh-copy-id` for more information. You will be prompted for the admin password on the server.
+
+1. On your local machine, log in as the admin user on the server using your SSH key. The following command should work without being prompted for the user password.
 
    ```
-   ls -la ~/home/<USERNAME>/.ssh
-   drwx------ 2 <USERNAME> <USERGROUP> 4096 Mar 26 12:00 .
-   drwxr-xr-x 6 <USERNAME> <USERGROUP> 4096 Mar 26 12:00 ..
-   -rw------- 1 <USERNAME> <USERGROUP>  396 Mar 26 12:00 authorized_keys
+   ssh <USERNAME>@cygni-deploy
    ```
-
-1. Log out from the SSH session.
-
-1. On your local machine, log in as the new user from your local machine.
 
    If you can not log in, try to find out what is going wrong.
 
    1. Add `--verbose` to the ssh command, this will print debug logs.
-   1. Log back in as root on the server and check the logs for the SSH server `journalctl --follow --identifier sshd`.
+   1. Log in as root on the server and check the logs for the SSH server `journalctl --follow --identifier sshd`.
 
    It is important that you do not move on until you have successfully logged in as the new admin user.
 
+1. On the server, verify the contents of `/home/<USERNAME>/.ssh/authorized_keys`. It should contain the public key (or keys) that you copied using `ssh-copy-id`. The contents of this file is what determines which keys you can use to log on as the admin user.
+
 ## Step 04 - Secure SSH
 
-Currently, `root` is still allowed to login to the server using either the root password or SSH public key. This is a potential security threat as there is only one factor that protects you from giving someone full access to the server. There are many different ways to secure your server and there are trade offs to consider in terms of convenience and security.
+Currently, both root and the admin user are allowed to login to the server using their password. This is a potential security threat as there is only one factor that protects you from giving someone full access to the server. There are many different ways to secure your server and there are trade offs to consider in terms of convenience and security.
 
-We are going to disable password authentication as a login method for all users and disable root login altogether. This means that we have added one extra layer of security. To gain admnistrative powers on the server, an attacker would need both your private SSH key and your admin password.
+You are going to disable password authentication as a login method for all users and disable root login completely. Effectively, you have added one extra layer of security. To gain admnistrative powers on the server, an attacker would need both your private SSH key and your admin password.
 
 The SSH server settings are defined in `/etc/ssh/sshd_config`. Files ending in `*.conf` in the directory `/etc/ssh/sshd_config.d/` are included by default in Ubuntu. See `man sshd_config` on the server for more information.
 
@@ -363,6 +371,13 @@ In the previous step, we ran the application in the foreground. The application 
    ```
 
 1. On the server, you can follow the logs using `sudo journalctl --follow --unit cygni`
+
+## TODO: Insert continous integration here
+
+### Set up CI
+
+- Test
+- Linting - TODO: add linting error in code so it fails
 
 ## Step 09 - Scripted deployment
 
@@ -531,6 +546,11 @@ Time to enable github to deploy our application. We need to create a new user on
 # Follow up exercises
 
 If you've finished all the steps above you can pick one of the following extra exercises.
+
+## Set up CI
+
+- Test
+- Linting
 
 ## Set up server maintenance
 
