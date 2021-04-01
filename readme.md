@@ -82,10 +82,36 @@ Chown -->
 
 # Exercises
 
-## Terminology
+## Tips and trix
 
-<!-- - **server** - the host server
-- ** -->
+### Writing files on server
+
+Editing files on the remote server can be a bit tricky unless you are familiar with linux tools such as `vi`, `nano` and `tee` among others.
+
+`vi` and `nano` are editors and are the most straight forward way to edit a file in place.
+
+```
+vi /path/to/file
+```
+
+You can use `tee` on the server to write files from stdin.
+
+```
+echo "Some content
+with newlines" | tee /path/to/file
+```
+
+You can also pipe stdin through `ssh` from your local machine.
+
+```
+echo "Some content" | ssh user@host "tee /path/to/remotefile"
+```
+
+In some cases, it is easier to write to files locally and copy them to the remote server using `scp`:
+
+```
+scp /path/to/localfile user@host:/path/to/remotefile
+```
 
 ## Step 01 - Set up SSH-access for root user
 
