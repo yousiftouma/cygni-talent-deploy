@@ -45,7 +45,7 @@ Visa vilka grupper användaren tillhör (adduser skapar grupp med namn <USERNAME
 groups <USERNAME>
 ```
 
-# Steg 03 - Setup SSH access
+# Steg 03 - Set up SSH access
 
 Autorisera dig själv att logga in som nya användaren, enklast är att kopiera `authorized_keys` från root-användaren.
 
@@ -278,7 +278,7 @@ jobs:
       - run: npm ci
       - run: npm test
 
-      - name: Setup ssh
+      - name: Set up ssh
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa

@@ -29,7 +29,7 @@ The purpose is to gain knowledge of how continuous deployments work under the ho
 
   - What is HAProxy (presentation)
   - Install haproxy
-  - Follow guide to setup simple http proxy to TODO: find guide or give a tip on google search
+  - Follow guide to set up simple http proxy to TODO: find guide or give a tip on google search
   - ufw disable 8080
 
 - Step 03 - support different environments - test/staging/prod
@@ -461,19 +461,19 @@ Time to enable github to deploy our application. We need to create a new user on
 
    - Checkout code, this step is already in the skeleton file.
 
-   - Setup node.js.
+   - Set up node.js.
 
      ```
-     - name: Setup node
+     - name: Set up node
        uses: actions/setup-node@v2
        with:
           node-version: "14"
      ```
 
-   - Setup SSH keys
+   - Set up SSH keys
 
      ```
-     - name: Setup ssh
+     - name: Set up ssh
        run: |
          mkdir -p ~/.ssh
          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
@@ -484,7 +484,7 @@ Time to enable github to deploy our application. We need to create a new user on
          SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
      ```
 
-   - Run deploy script
+   - Set up deploy script
 
      ```
      - name: Deploy
