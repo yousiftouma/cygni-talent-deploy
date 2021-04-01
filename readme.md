@@ -466,7 +466,29 @@ Now it is time to focus on the continuous integration part of the exercise. In t
 
 ## Step 11 - Set up static code analysis
 
-TODO: eslint and stuff
+In this step, we are going to add some tools that runs static code analysis on the code base. These tools should be added as part of the Github Actions workflow defined in the previous step. In effect, we will get broken builds whenever the master branch contains bad code.
+
+1. Install eslint - follow instructions on https://eslint.org/docs/user-guide/getting-started
+
+   When asked "How would you like to use ESLint?". Choose either "To check syntax only" or "To check syntax and find problems". The last option to "enforce code style" is more commonly the responsibility of a code formatter.
+
+1. Run eslint as part of the Github Actions workflow.
+
+   It is common to add an npm script for linting similar to the `test` script that is already added in `package.json`. For example
+
+   ```
+   "lint": "eslint src/"
+   ```
+
+   ESLint can then be invoked by running `npm run lint` in the repository root.
+
+1. Install prettier - follow instructions on https://prettier.io/docs/en/install.html
+
+1. Run prettier as part of the Github Actions workflow.
+
+   As hinted in the documentation, it is common to run `prettier --check` as part of the CI setup. This can be added as an additional npm script, or as part of the lint step.
+
+1. Push some intentially bad code to the master branch, follow the build and observe the failed build.
 
 ## Step 12 - Github Actions deployment
 
