@@ -1,165 +1,158 @@
-# Steg 01 - Sätt upp SSH-access för root
-
-Om ni inte redan har en, skapa en SSH-nyckel.
-
-```bash
-ssh-keygen
-```
-
-Lägg till servern i ~/.ssh/config (vill man använda en annan fil och vet hur man gör så funkar det lika bra).
+# Step 01 - Log in to server
 
 ```ssh-config
+// ~/.ssh/config
 Host cygni-deploy
-    HostName 192.46.239.99
+    HostName <SERVER-IP>
 ```
 
-Kopiera över eran publika ssh-nyckel.
-
-```bash
-ssh-copy-id root@cygni-deploy
 ```
-
-SSH-a in på servern
-
-```bash
 ssh root@cygni-deploy
 ```
 
-# Steg 02 - Skapa användare
-
-Inne på servern, skapa admin användare tillhörande sudo.
+# Step 02 - Create admin user
 
 ```bash
+# Add user
 adduser <USERNAME>
-```
 
-Lägg till användaren i gruppen sudo
-
-```
+# Add to group sudo
 adduser <USERNAME> sudo
-```
 
-Visa vilka grupper användaren tillhör (adduser skapar grupp med namn <USERNAME>)
-
-```
+# Check groups
 groups <USERNAME>
+
+# Check home directory
+ls -la /home
 ```
 
-# Steg 03 - Set up SSH access
-
-Autorisera dig själv att logga in som nya användaren, enklast är att kopiera `authorized_keys` från root-användaren.
+# Step 03 - Set up public key authentication
 
 ```bash
-mkdir -p /home/<USERNAME>/.ssh
-cp /root/.ssh/authorized_keys /home/<USERNAME>/.ssh/
-```
+# Create key
+ssh-keygen
 
-Sätt rätt ägarskap och rättigheter
+# Copy key
+ssh-copy-id <USERNAME>@cygni-deploy
 
-```bash
-chown -R <USERNAME>:<USERNAME> /home/<USERNAME>/.ssh
-chmod 700 /home/<USERNAME>/.ssh
-chmod 600 /home/<USERNAME>/.ssh/authorized_keys
-```
-
-Logga ut som root och lägg testa logga in som den nya användaren.
-
-```
+# Log in
 ssh <USERNAME>@cygni-deploy
+
+# Check key file
+# From server
+cat ~/.ssh/authorized_keys
+
+# From local
+cat ~/.ssh/id_rsa.pub
 ```
 
-# Steg 04 - Secure SSH
+# Step 04 - Secure SSH
 
 OBS `sshd_config.d` INTE `ssh_config.d`
 
 ```bash
+# Open file
 sudo vi /etc/ssh/sshd_config.d/00-setup.conf
-```
 
-Lägg till
-
-```bash
+# Add and save
 PermitRootLogin no
 PasswordAuthentication no
-```
 
-Starta om sshd
-
-```bash
+# Restart SSHD
 sudo systemctl restart sshd
-```
 
-Logga ut eller byt terminal se till att du får permission denied
-
-```
+# From local machine, verify denied
 ssh root@cygni-deploy
 ```
 
-# Steg 05 - Brandvägg
+# Step 05 - firewall
 
-Inne på servern
-
-```
+```bash
+# Install/update
 sudo apt update
 sudo apt install ufw
+
+# Setup up default rules
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
+
+# Specific rules
 sudo ufw allow ssh
 sudo ufw allow in 8080/tcp
 
+# Show rules
+sudo ufw show added
+
+# Enable
 sudo ufw enable
+
+# Show status
+sudo ufw status
+
+# From local machine
+telnet $SERVER 80 # time out
+telnet $SERVER 8080 # established
+
+# From server
+sudo ufw reject 80
+
+# From local machine
+telnet $SERVER 80
+
+# From server
+sudo ufw status numbered
+sudo ufw delete NUM
 ```
 
-# Steg 06 - Dependencies
-
-```
-SERVER> curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-SERVER> sudo apt install nodejs
-```
-
-# Steg 07 - Service
-
-Börja med att kopiera över appen från _lokal_ maskin
+# Step 06 - Dependencies
 
 ```bash
+# Goto https://nodejs.org/en/download/package-manager/
+
+curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+sudo apt install nodejs
+
+# Check version
+node -v
+npm -v
+```
+
+# Step 07 - Service
+
+```bash
+# Create tarball with source code
 tar -czf tmp_cygni-service.tar.gz src/ package.json package-lock.json
-scp tmp_cygni-service.tar.gz <USERNAME>@cygni-deploy:~/cygni-service.tar.gz
-```
 
-Packa upp appen på ett väl valt ställe
+# Copy to server
+scp tmp_cygni-service.tar.gz <USERNAME>@cygni-deploy:/tmp/cygni-service.tar.gz
 
-```bash
+# From server, create directory
 sudo mkdir -p /opt/cygni/app
 cd /opt/cygni/app
+
+# Unpack tarball
 sudo tar -xzf ~/cygni-service.tar.gz
+
+# Install dependencies
 npm ci --production
-```
 
-Nu kan vi köra tjänsten
-
-```
+# Run
 npm start
-```
 
-Curla från lokal maskin
-
-```
+# From local machine
 curl $SERVER:8080
 ```
 
-# Steg 5 - Service
+# Step 08 - Deployment
 
-Vi ska givetvis köra appen i bakgrunden som en tjänst.
-
-Skapa en systemanvändare
-
-```
+```bash
+# Create system user
 adduser --system cygni
-```
 
-Skapa en systemd unit `/etc/systemd/cygni.service`
+# Create unit file
+sudo vi /etc/systemd/cygni.service
 
-```
+"
 [Unit]
 Description=Cygni Competence Deploy
 
@@ -172,31 +165,25 @@ WorkingDirectory=/opt/cygni/app
 
 [Install]
 WantedBy=multi-user.target
-```
+"
 
-Starta
-
-```
+# Start service
 sudo systemctl start cygni
-```
 
-Visa att den kör
-
-```
+# From local machine
 curl $SERVER:8080
+
+# Show logs on server
+journalctl -f --unit cygni
 ```
 
-Illustrera en deploy genom att ändra i index-filen. Lägg till ett log-statement.
+# Step 09 - Scripted deployment
 
-Repetera sedan tar, scp, untar och avsluta med `systemctl restart cygni` så borde man se att det lirar.
+```bash
+# run script
+./scripts/deploy.sh # -> permission denied
 
-Visa `sudo journalctl -f --unit cygni`
-
-# Steg 6 - Scriptad deploy
-
-Skapa en grupp som har tillräckligt med permissions för att deploya. Lägg till admin i den gruppen.
-
-```
+# create user
 sudo addgroup deployers
 sudo adduser <USERNAME> deployers
 
@@ -205,94 +192,102 @@ sudo chmod 775 /opt/cygni
 
 sudo chown :deployers /etc/systemd/system/cygni.service
 sudo chmod 664 /etc/systemd/system/cygni.service
-```
 
-Lägg till kommandon i en sudoers fil /etc/sudoers.d/00-deployers
-
-```
+# add sudoers
+sudo visudo -f /etc/sudoers.d/00-deployers
 %deployers ALL=NOPASSWD:/bin/systemctl daemon-reload, /bin/systemctl restart cygni
-```
 
-Kör deploy-scriptet
-
-```
+# from local machine run script again
 export DEPLOY_USER=<USERNAME>
-
 ./scripts/deploy.sh
+
+# change something in response and deploy again
 ```
 
-# Steg 7 - Skapa en användare för github
+# Step 10 - Set up CI
 
 ```
-SERVER> sudo adduser github --disabled-password
-SERVER> sudo adduser github deployers
+# Do github action, add steps
+   - name: Set up node
+     uses: actions/setup-node@v2
+     with:
+        node-version: "14"
+
+   - name: Test
+     run: npm test
+
+# Save and commit. Trigger action
 ```
 
-Ingen passphrase
+# Step 11 - Set up static code analysis
 
-```sh
-LOCAL> ssh-keygen -f id_github
-LOCAL> ssh-keyscan $SERVER > known_hosts
+```bash
+# Install eslint
+npm i --save-dev eslint
+npx eslint --init
+npx eslint src
+
+# Add step
+
+- name: Lint
+  run: npm run lint
+
+# Install prettier
+npm i --save-dev prettier
+echo '{}' > .prettierrc.json
+touch .prettierignore
+npx prettier --check src
+
+# Add step
+- name: Format check
+  run: npm run format
+
+# Push and watch action
 ```
 
-Kopiera _publika_ nykeln till servern
+# Step 12 - Github Actions deployment
 
-```sh
-LOCAL> scp id_github.pub <USERNAME>@cygni-deploy:~
-```
+```bash
+# Create user
+sudo adduser github --disabled-password
+sudo adduser github deployers
 
-Navigera till hemkatalogen och flytta filen till /home/github
+# From local machine
+ssh-keygen -f id_github
+ssh-keyscan $SERVER > known_hosts
 
-```sh
-SERVER> sudo mkdir -p /home/github/.ssh
-SERVER> sudo chown github:github /home/github/.ssh
-SERVER> sudo chmod 700 /home/github/.ssh
-SERVER> sudo mv ~/id_github.pub /home/github/.ssh/authorized_keys
-SERVER> sudo chown github:github /home/github/.ssh/authorized_keys
-SERVER> sudo chmod 600 /home/github/.ssh/authorized_keys
-```
+# From local machine
+scp id_github.pub <USERNAME>@cygni-deploy:/tmp/id_github.pub
 
-# Steg 8 - Skapa en github action
+# From server
+sudo mkdir -p /home/github/.ssh
+sudo chown github:github /home/github/.ssh
+sudo chmod 700 /home/github/.ssh
+sudo mv /tmp/id_github.pub /home/github/.ssh/authorized_keys
+sudo chown github:github /home/github/.ssh/authorized_keys
+sudo chmod 600 /home/github/.ssh/authorized_keys
 
-- Ladda upp secrets, skapa jobb
+# Test the ssh connection
+ssh -i id_github github@cygni-deploy
 
-```yml
-name: CI
+# Upload secrets, add steps
+- name: Set up ssh
+  run: |
+    mkdir -p ~/.ssh
+    echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+    chmod 600 ~/.ssh/id_rsa
+  env:
+    SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+    SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
 
-on:
-  push:
-    branches: [master]
+- name: Deploy
+  run: |
+    ./scripts/deploy.sh
+  shell: bash
+  env:
+    SERVER: "<SERVER-IP>"
+    DEPLOY_USER: "github"
 
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: "14"
-
-      - run: npm ci
-      - run: npm test
-
-      - name: Set up ssh
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_rsa
-        env:
-          SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
-          SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
-
-      - name: Deploy
-        run: |
-          ./scripts/deploy.sh
-        shell: bash
-        env:
-          SERVER: "192.46.239.99"
-          DEPLOY_USER: "github"
+# Try it out
 ```
