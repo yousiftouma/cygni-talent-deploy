@@ -19,66 +19,53 @@ The purpose is to gain knowledge of how continuous deployments work under the ho
 ## Agenda
 
 - Presentation CI/CD
-- Walk through step 00
-- Do step 00 (X min)
-
-- Walk through step 01
-- Do step 01 (Y min)
-
-- Step 02 - reverse-proxy - HAProxy/Nginx/Traefik
-
-  - What is HAProxy (presentation)
-  - Install haproxy
-  - Follow guide to set up simple http proxy to TODO: find guide or give a tip on google search
-  - ufw disable 8080
-
-- Step 03 - support different environments - test/staging/prod
-
-  - modify deploy script to support different deployment directories and systemd services
-  - /opt/cygni-talent-deploy_test/app_date -> 8081
-  - /opt/cygni-talent-deploy_prod/app_date -> 8080
-  - Kanske <SERVER>:80/\_test -> 8081
-  - Kanske <SERVER>:80 -> 8080
+- Walk through step 00 - 12
+- Do step 00 - 12
 
 - TODO: Script för att rätta allas servrar
   - Rätt portar öppna
   - Inte ssh:a in som root
 
-## TODO: Non-goals
-
-TODO: provisioning, ci servers
-
 ## Pre requisites
 
 - Fork this repository to your own GitHub account
-- `ssh` client installed on your machine
 - Terminal installed
   - Windows WSL
-  -
 - node v14+ with npm
-- systemd: https://www.digitalocean.com/community/tutorials/understanding-systemd-units-and-unit-files
 
 TODO(emil): Add list and links
 
-<!-- Dom här linuxkommandona behöver du förstå och kunna göra lokalt:
-Lokalt
-ssh
-ssh-copy-id
-ssh-keygen
-tar
-echo
-scp
+### Required tools
 
-På maskinen
-|
-Tee
-Mkdir
-Chmod
-Systemctl
-curl
-Sudo
-Touch
-Chown -->
+These tools needs to be available on your local machine
+
+- `ssh`
+- `ssh-copy-id`
+- `ssh-keygen`
+- `scp`
+- `tar`
+- `echo`
+- `node` v14+
+- `npm` v6+
+- `curl`
+
+### Other tools
+
+The following is a list of programs you need to know how to run on the server. Check their manuals
+
+- `tee`
+- `systemctl`
+- `sudo`
+- `mkdir`
+- `chown`
+- `chmod`
+- `adduser`
+- `groups`
+- `visudo`
+
+### Other
+
+- systemd https://www.digitalocean.com/community/tutorials/understanding-systemd-units-and-unit-files
 
 # Exercises
 
