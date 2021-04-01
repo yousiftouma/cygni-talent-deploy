@@ -372,16 +372,9 @@ In the previous step, we ran the application in the foreground. The application 
 
 1. On the server, you can follow the logs using `sudo journalctl --follow --unit cygni`
 
-## TODO: Insert continous integration here
-
-### Set up CI
-
-- Test
-- Linting - TODO: add linting error in code so it fails
-
 ## Step 09 - Scripted deployment
 
-Next step is to automate the tasks in the previous step. On the CI-server we will not be able to interactively provide passwords when running `sudo` commands. We can solve this by adding a new group called `deployers` for more granular permission control. Users in this group should have sufficient permissions for deploying our application, but not more!
+Next step is to automate the tasks in the previous step. The script [`./scripts/deploy.sh`](./scripts/deploy.sh) is performing the same tasks. However, if you try to run it now, you will get some permissions errors. We will solve this by adding a new group called `deployers` for more granular permission control. Users in this group should have sufficient permissions for deploying our application, but not more!
 
 The `deployers` group will have group ownership and write permissions to the `/opt/cygni` directory and the `/etc/systemd/cygni.service`. In addition, they will have passwordless access to the commands to restart the `cygni` service.
 
@@ -448,7 +441,34 @@ The `deployers` group will have group ownership and write permissions to the `/o
 
 1. On your local machine, curl the application to verify that the deployment succeeded.
 
-## Step 10 - Github Actions deployment
+## Step 10 - Set up CI
+
+Now it is time to focus on the continuous integration part of the exercise. In this step we will create a new github action.
+
+1. Create a new github action, follow these links on your repository page
+
+   Actions -> New workflow -> "Skip this and set up a workflow yourself"
+
+   This will generate a skeleton workflow file for you. Walk through the document and try to understand its structure.
+
+1. Add a step after the checkout step that sets up node.js on the build machine
+
+   ```
+   - name: Set up node
+     uses: actions/setup-node@v2
+     with:
+        node-version: "14"
+   ```
+
+1. Add a step for running the unit tests using the command `npm test`
+
+1. Save and commit the file to master. Now you should be able to see the workflow under the "Actions" tab. If you kept the "workflow_dispatch:" property from the skeleton, you can manually trigger the workflow from the github GUI as well. Move on once you have made sure that the workflow works as expected.
+
+## Step 11 - Set up static code analysis
+
+TODO: eslint and stuff
+
+## Step 12 - Github Actions deployment
 
 Time to enable github to deploy our application. We need to create a new user on the server called `github` which our github action will use when logging in to the server. This user will be in group `deployers`, which we've already made sure has sufficient permissions to deploy the application.
 
@@ -492,24 +512,7 @@ Time to enable github to deploy our application. We need to create a new user on
 
    Give the secrets approriate names such as `SSH_KNOWN_HOSTS` and `SSH_PRIVATE_KEY`.
 
-1. Create a new github action, follow these links on your repository page
-
-   Actions -> New workflow -> "Skip this and set up a workflow yourself"
-
-   This will generate a skeleton workflow file for you. Walk through the document and try to understand its structure.
-
-   Essentially, we need 4 steps.
-
-   - Checkout code, this step is already in the skeleton file.
-
-   - Set up node.js.
-
-     ```
-     - name: Set up node
-       uses: actions/setup-node@v2
-       with:
-          node-version: "14"
-     ```
+1. Add step "set up SSH"
 
    - Set up SSH keys
 
@@ -525,6 +528,8 @@ Time to enable github to deploy our application. We need to create a new user on
          SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
      ```
 
+1. Add step "deploy"
+
    - Set up deploy script
 
      ```
@@ -537,20 +542,13 @@ Time to enable github to deploy our application. We need to create a new user on
          DEPLOY_USER: "github"
      ```
 
-1. Save and commit the file to master. Now you should be able to see the workflow under the "Actions" tab. If you kept the "workflow_dispatch:" property from the skeleton, you can manually trigger the workflow from the github GUI as well. Move on once you have made sure that the workflow works as expected.
-
-1. On your local machine, pull the repository so that you have the latest commit containing the github workflow locally, then make a change to the response in `index.js`. Push the changes to the remote master branch and follow the workflow progress on github.
+1. Save, commit and push the file to master. This should trigger a deployment. Follow the progress on Github as in previous steps.
 
 1. On your local machine, curl the application and make sure it responds as expected.
 
 # Follow up exercises
 
 If you've finished all the steps above you can pick one of the following extra exercises.
-
-## Set up CI
-
-- Test
-- Linting
 
 ## Set up server maintenance
 
