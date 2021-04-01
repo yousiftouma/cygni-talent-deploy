@@ -278,7 +278,13 @@ Here is a good resource on `ufw` from Digital Ocean: https://www.digitalocean.co
    [ 4] 8080/tcp (v6)              ALLOW IN    Anywhere (v6)
    ```
 
-1. On your local machine, test the firewall using `telnet`.
+1. Test the firewall using `telnet` on your local machine and `nc` on the server.
+
+   Use `nc -l <PORT>` to listen for incoming connections on the server.
+
+   Use `telnet $SERVER <PORT>` to initiate a connection on the server.
+
+   Try this on both opened and denied ports.
 
    - For _denied_ ports, the connection will timeout.
    - For _allowed_ ports, a connection should be opened.
