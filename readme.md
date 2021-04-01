@@ -382,7 +382,7 @@ The `deployers` group will have group ownership and write permissions to the `/o
    <USERNAME>: <USERGROUP> sudo deployers
    ```
 
-1. On the server, recursively change the group ownership of `/opt/cygni` to `deployers`.
+1. On the server, change the group ownership of `/opt/cygni` to `deployers`. See `man chgrp`.
 
 1. On the server, change the permissions to allow the deployers group to read, write and traverse the `/opt/cygni` directory.
 
