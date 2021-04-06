@@ -162,9 +162,6 @@ ExecStart=/usr/bin/env npm start
 Environment=NODE_ENV=production
 Environment=PORT=8080
 WorkingDirectory=/opt/cygni/app
-
-[Install]
-WantedBy=multi-user.target
 "
 
 # Start service

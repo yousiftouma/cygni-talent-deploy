@@ -20,9 +20,6 @@ Environment=NODE_ENV=production
 Environment=PORT=8080
 Environment=BUILD_NUMBER=${GITHUB_RUN_NUMBER:-0}
 WorkingDirectory=$DEPLOYMENT_DIR
-
-[Install]
-WantedBy=multi-user.target
 " | ssh $HOST "tee /etc/systemd/system/cygni.service"
 
 ssh $HOST "sudo systemctl daemon-reload && sudo systemctl restart cygni"

@@ -48,6 +48,8 @@ These tools needs to be available on your local machine
 - `node` v14+
 - `npm` v6+
 - `curl`
+- `telnet`
+- `nmap`
 
 ### Other tools
 
@@ -280,9 +282,9 @@ Here is a good resource on `ufw` from Digital Ocean: https://www.digitalocean.co
 
 1. Test the firewall using `telnet` on your local machine and `nc` on the server.
 
-   Use `nc -l <PORT>` to listen for incoming connections on the server.
+   Use `nc -l 8080` to listen for incoming connections on the server.
 
-   Use `telnet $SERVER <PORT>` to initiate a connection on the server.
+   Use `telnet <SERVER-IP> 8080` to initiate a connection on the server.
 
    Try this on both opened and denied ports.
 
@@ -290,9 +292,13 @@ Here is a good resource on `ufw` from Digital Ocean: https://www.digitalocean.co
    - For _allowed_ ports, a connection should be opened.
    - If you chose _reject_ instead if _deny_, you will get a "Connection refused" error.
 
+1. You can also try the cli portscanner `nmap` used in Matrix to see which ports are open.
+
+   Use `nmap -Pn <SERVER-IP>` to list open ports on your server.
+
 ## Step 06 - Dependencies
 
-Our application needs node.js installed to run. Install the latest LTS version. See https://nodejs.org/en/download/package-manager/
+Our application needs node.js installed to run. Install the latest LTS version (14.x). See https://nodejs.org/en/download/package-manager/
 
 1. On the server, install node.js
 
@@ -325,7 +331,7 @@ Finally time to run the app on the server.
 1. On your local machine, test the service using curl.
 
    ```
-   curl $SERVER:8080
+   curl <SERVER-IP>:8080
    ```
 
    You should receive a "Hello World!" reply. If not, use error messages to trace back where something could have gone wrong. Ask for help if needed.
@@ -338,7 +344,7 @@ In the previous step, we ran the application in the foreground. The application 
 
 1. On the server, create a new system user using `adduser --system cygni`. This will create an unprivileged, passwordless and groupless user that we will use to run our application on the server.
 
-1. On the server, create a new systemd service by creating a file `/etc/systemd/cygni.service`.
+1. On the server, create a new systemd service by creating a file `/etc/systemd/system/cygni.service`.
 
    ```
    [Unit]
@@ -350,9 +356,6 @@ In the previous step, we ran the application in the foreground. The application 
    Environment=NODE_ENV=production
    Environment=PORT=8080
    WorkingDirectory=/opt/cygni/app
-
-   [Install]
-   WantedBy=multi-user.target
    ```
 
 1. On the server, start the service using `systemctl`. See `man systemctl` for instructions.
@@ -360,7 +363,7 @@ In the previous step, we ran the application in the foreground. The application 
 1. On your local machine, test the service using curl.
 
    ```
-   curl $SERVER:8080
+   curl <SERVER-IP>:8080
    ```
 
 1. On the server, you can follow the logs using `sudo journalctl --follow --unit cygni`
