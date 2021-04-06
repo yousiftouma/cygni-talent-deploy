@@ -358,7 +358,7 @@ In the previous step, we ran the application in the foreground. The application 
    WorkingDirectory=/opt/cygni/app
    ```
 
-1. On the server, start the service using `systemctl`. See `man systemctl` for instructions.
+1. On the server, start the service using `systemctl`. See `man systemctl` for instructions. (hint: `enable` first then `start`)
 
 1. On your local machine, test the service using curl.
 
@@ -367,6 +367,8 @@ In the previous step, we ran the application in the foreground. The application 
    ```
 
 1. On the server, you can follow the logs using `sudo journalctl --follow --unit cygni`
+
+> > > > > Hit tog c:a 40 minuter.
 
 ## Step 09 - Scripted deployment
 
