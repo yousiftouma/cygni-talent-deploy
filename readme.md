@@ -126,6 +126,15 @@ In some cases, it is easier to write to files locally and copy them to the remot
 scp /path/to/localfile user@host:/path/to/remotefile
 ```
 
+### Changing ownership and permissions
+
+TODO: Some examples
+[chmod calculator may help](https://chmod-calculator.com/)
+
+```
+chmod ug+w /path/to/file
+```
+
 ## Step 00 - Fork this repo
 
 Make a fork of this repo to your own account on GitHub. This is so that you can checkin stuff and activate GitHub actions.
@@ -297,7 +306,7 @@ Here is a good resource on `ufw` from Digital Ocean: https://www.digitalocean.co
    - For _allowed_ ports, a connection should be opened.
    - If you chose _reject_ instead if _deny_, you will get a "Connection refused" error.
 
-1. You can also try the cli portscanner `nmap` used in Matrix to see which ports are open.
+1. You can also try the cli portscanner `nmap` used in [Matrix](https://www.youtube.com/watch?v=0PxTAn4g20U) to see which ports are open.
 
    Use `nmap -Pn <SERVER-IP>` to list open ports on your server.
 
@@ -373,8 +382,6 @@ In the previous step, we ran the application in the foreground. The application 
 
 1. On the server, you can follow the logs using `sudo journalctl --follow --unit cygni`
 
-> > > > > Hit tog c:a 40 minuter.
-
 ## Step 09 - Scripted deployment
 
 Next step is to automate the tasks in the previous step. The script [`./scripts/deploy.sh`](./scripts/deploy.sh) is performing the same tasks. However, if you try to run it now, you will get some permissions errors. We will solve this by adding a new group called `deployers` for more granular permission control. Users in this group should have sufficient permissions for deploying our application, but not more!
@@ -394,7 +401,7 @@ The `deployers` group will have group ownership and write permissions to the `/o
 
 1. On the server, change the group ownership of `/opt/cygni` to `deployers`. See `man chgrp`.
 
-1. On the server, change the permissions to allow the deployers group to read, write and traverse the `/opt/cygni` directory. See `man chmod`. [chmod calculator may help](https://chmod-calculator.com/)
+1. On the server, change the permissions to allow the deployers group to read, write and traverse the `/opt/cygni` directory. See `man chmod`.
 
    Expected permissions are as follows:
 
@@ -464,6 +471,8 @@ Now it is time to focus on the continuous integration part of the exercise. In t
         node-version: "14"
    ```
 
+1. Add a step for installing dependencies using the command `npm ci`
+
 1. Add a step for running the unit tests using the command `npm test`
 
 1. Save and commit the file to master. Now you should be able to see the workflow under the "Actions" tab. If you kept the "workflow_dispatch:" property from the skeleton, you can manually trigger the workflow from the github GUI as well. Move on once you have made sure that the workflow works as expected.
@@ -497,6 +506,8 @@ In this step, we are going to add some tools that runs static code analysis on t
 ## Step 12 - Github Actions deployment
 
 Time to enable github to deploy our application. We need to create a new user on the server called `github` which our github action will use when logging in to the server. This user will be in group `deployers`, which we've already made sure has sufficient permissions to deploy the application.
+
+TODO: Explain that we need to set up a new SSH key for this user
 
 1. On the server, add a new user called `github` make sure to use `--disabled-password` flag to skip password set up for this user.
 
