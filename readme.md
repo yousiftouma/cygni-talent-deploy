@@ -14,15 +14,15 @@ The goal of this course is to be able to set up simple automated deployments fro
 
 ## Purpose
 
-The purpose is to gain knowledge of how continuous deployments work under the hood. We will focus on automating all of the tasks. Scripts should be idempotent, meaning we should be able to run them repetetively without changing the result and without errors.
+The purpose is to gain practical knowledge of how to set up services on linux servers from scratch.
 
 ## Agenda
 
 - Presentation CI/CD
-- Walk through step 00 - 12
-- Do step 00 - 12
+- Walk through step 00 - 04
+- Do step 04 - 12
 
-- TODO: Script för att rätta allas servrar
+- TODO(emil): Script för att rätta allas servrar
   - Rätt portar öppna
   - Inte ssh:a in som root
 
@@ -589,14 +589,19 @@ If you've finished all the steps above you can pick one of the following extra e
 
 ## Set up server maintenance
 
-Set up periodic clean up of the application deployments in `/opt/cygni`. For example
+Set up periodic clean up of deployments in `/opt/cygni`. For example
 
-- Every hour, make sure that there are no more than 10 deployments
+- Every hour, make sure that only the 5 latest deployments are kept. You can use `crontab` for this.
 
-You can use `crontab` for this.
+**hint** use `ls`, `sort` and `wc` and `rm`
 
 ## Set up multiple environments
 
-For example on push to master, we deploy to a staging environment, but on a tag, we deploy to the production environment.
+We can host multiple versions of the application on the same server as long as they are listening on different ports. Create and/or modify github actions that deploys staging and production versions of your application.
+
+You can set this up in many different ways, for example:
+
+- On push to master, deploy staging environment.
+- On tag creation, deploy production environment.
 
 If you are feeling more ambitious, set up a reverse proxy (haproxy, nginx) in front of the environments.
