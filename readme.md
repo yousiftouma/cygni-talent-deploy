@@ -1,6 +1,6 @@
 # CI/CD from scratch
 
-This is a course in Continuous Integration and Continuous Deployment from scracth. That means we are not going to use any off-the-shelf products such as heroku to achieve this. We are going to use a Linux server that we access through ssh. We will automate tasks using bash and run services using systemd.
+This is a course in Continuous Integration and Continuous Deployment from scratch. That means we are not going to use any off-the-shelf products such as heroku to achieve this. We are going to use a Linux server that we access through ssh.
 
 ## Goals
 
@@ -128,12 +128,35 @@ scp /path/to/localfile user@host:/path/to/remotefile
 
 ### Changing ownership and permissions
 
-TODO: Some examples
-[chmod calculator may help](https://chmod-calculator.com/)
+Arch wiki has good articla about file permissions and attributes [here](https://wiki.archlinux.org/index.php/File_permissions_and_attributes).
 
-```
-chmod ug+w /path/to/file
-```
+[Here](https://chmod-calculator.com/) is a handy tool to visualize the different representations of file permissions.
+
+Here are some example usages of `chmod`, `chgrp` and `chmod`
+
+- Make `/path/to/file` read and writable for owner, but no one else
+
+  ```
+  chmod 600 /path/to/file
+  ```
+
+- Change owner of `/path/to/file` to `user`
+
+  ```
+  chown user /path/to/file
+  ```
+
+- Change group of `/path/to/file` to `group`
+
+  ```
+  chgrp group /path/to/file
+  ```
+
+  or
+
+  ```
+  chown :group /path/to/file
+  ```
 
 ## Step 00 - Fork this repo
 
