@@ -42,6 +42,7 @@ These tools needs to be available on your local machine
 - `ssh`
 - `ssh-copy-id`
 - `ssh-keygen`
+- `ssh-keyscan`
 - `scp`
 - `tar`
 - `echo`
@@ -124,6 +125,10 @@ In some cases, it is easier to write to files locally and copy them to the remot
 ```
 scp /path/to/localfile user@host:/path/to/remotefile
 ```
+
+## Step 00 - Fork this repo
+
+Make a fork of this repo to your own account on GitHub. This is so that you can checkin stuff and activate GitHub actions.
 
 ## Step 01 - Log in to server
 
@@ -374,7 +379,7 @@ In the previous step, we ran the application in the foreground. The application 
 
 Next step is to automate the tasks in the previous step. The script [`./scripts/deploy.sh`](./scripts/deploy.sh) is performing the same tasks. However, if you try to run it now, you will get some permissions errors. We will solve this by adding a new group called `deployers` for more granular permission control. Users in this group should have sufficient permissions for deploying our application, but not more!
 
-The `deployers` group will have group ownership and write permissions to the `/opt/cygni` directory and the `/etc/systemd/cygni.service`. In addition, they will have passwordless access to the commands to restart the `cygni` service.
+The `deployers` group will have group ownership and write permissions to the `/opt/cygni` directory and the `/etc/systemd/system/cygni.service`. In addition, they will have passwordless access to the commands to restart the `cygni` service.
 
 1. On the server, add a new group called `deployers`. See `man addgroup`.
 
@@ -389,7 +394,7 @@ The `deployers` group will have group ownership and write permissions to the `/o
 
 1. On the server, change the group ownership of `/opt/cygni` to `deployers`. See `man chgrp`.
 
-1. On the server, change the permissions to allow the deployers group to read, write and traverse the `/opt/cygni` directory.
+1. On the server, change the permissions to allow the deployers group to read, write and traverse the `/opt/cygni` directory. See `man chmod`. [chmod calculator may help](https://chmod-calculator.com/)
 
    Expected permissions are as follows:
 
@@ -426,10 +431,11 @@ The `deployers` group will have group ownership and write permissions to the `/o
 
 1. On your local machine, run the script `./scripts/deploy.sh`.
 
-   Set the environment variable `DEPLOY_USER` to specify the username of your admin user on the server. Make sure that no interactive password prompts appear.
+   Set the environment variable `DEPLOY_USER` to specify the username of your admin user on the server. Also set the SERVER variable to point to your server's IP in the same manner. Make sure that no interactive password prompts appear.
 
    ```
    export DEPLOY_USER=<USERNAME>
+   export SERVER=<SERVER-IP>
    ./scripts/deploy.sh
    ```
 
@@ -505,7 +511,7 @@ Time to enable github to deploy our application. We need to create a new user on
 1. On your local machine, scan the server for its public keys and save it to a known_hosts file next to the keys generated in the previous step. We will upload this to github as well to verify that the servers host keys are not changed.
 
    ```
-   ssh-keyscan $SERVER > cygni_known_hosts
+   ssh-keyscan <SERVER-IP> > cygni_known_hosts
    ```
 
 1. Copy the public key (`cygni_id_github.pub`), from your local machine to the server at `/home/github/.ssh/authorized_keys`.
