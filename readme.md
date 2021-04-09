@@ -39,6 +39,7 @@ TODO(emil): Add list and links
 
 These tools needs to be available on your local machine
 
+- `git`
 - `ssh`
 - `ssh-copy-id`
 - `ssh-keygen`
