@@ -472,7 +472,7 @@ The `deployers` group will have group ownership and write permissions to the `/o
 
 1. On the server, check the logs in `journalctl`, you should be able to see that the server was restarted.
 
-1. On your local machine, make some edits to the Hello World reply in `src/index.js`, then rerun the deploy script.
+1. On your local machine, make some edits to the Hello World reply in `src/server.js`, then rerun the deploy script.
 
 1. On your local machine, curl the application to verify that the deployment succeeded.
 
