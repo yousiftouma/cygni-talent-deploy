@@ -396,7 +396,7 @@ In the previous step, we ran the application in the foreground. The application 
    WorkingDirectory=/opt/cygni/app
    ```
 
-1. On the server, start the service using `systemctl`. See `man systemctl` for instructions. (hint: `enable` first then `start`)
+1. On the server, start the service using `systemctl`. See `man systemctl` for instructions.
 
 1. On your local machine, test the service using curl.
 
@@ -611,13 +611,11 @@ TODO: Explain that we need to set up a new SSH key for this user
 
 If you've finished all the steps above you can pick one of the following extra exercises.
 
-## Set up server maintenance
+## Clean up old deployments
 
-Set up periodic clean up of deployments in `/opt/cygni`. For example
+The current script creates a new directory for each deployment. Make sure that only the 5 latest deployments are kept on disk.
 
-- Every hour, make sure that only the 5 latest deployments are kept. You can use `crontab` for this.
-
-**hint** use `ls`, `sort` and `wc` and `rm`
+**hint** look at commands `ls`, `sort`, `find`, `wc` and `rm`
 
 ## Set up multiple environments
 
