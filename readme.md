@@ -123,7 +123,7 @@ scp /path/to/localfile user@host:/path/to/remotefile
 
 ### Changing ownership and permissions
 
-Arch wiki has good articla about file permissions and attributes [here](https://wiki.archlinux.org/index.php/File_permissions_and_attributes).
+Arch wiki has a good article about file permissions and attributes [here](https://wiki.archlinux.org/index.php/File_permissions_and_attributes).
 
 [Here](https://chmod-calculator.com/) is a handy tool to visualize the different representations of file permissions.
 
