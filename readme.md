@@ -31,7 +31,20 @@ The purpose is to gain practical knowledge of how to set up services on linux se
 
 ### Required tools
 
-These tools needs to be available on your local machine
+These tools needs to be available on your local machine. If you need help on using a commando in Linux you can always use the `man` command. 
+
+```bash
+> man tar
+
+NAME
+     tar -- manipulate tape archives
+
+SYNOPSIS
+     tar [bundled-flags <args>] [<file> | <pattern> ...]
+     tar {-c} [options] [files | directories]
+     tar {-r | -u} -f archive-file [options] [files | directories]
+     tar {-t | -x} [options] [patterns]
+```
 
 - `git`
 - `ssh`
