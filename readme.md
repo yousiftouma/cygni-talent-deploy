@@ -22,18 +22,12 @@ The purpose is to gain practical knowledge of how to set up services on linux se
 - Walk through step 00 - 04
 - Do step 04 - 12
 
-- TODO(emil): Script för att rätta allas servrar
-  - Rätt portar öppna
-  - Inte ssh:a in som root
-
 ## Pre requisites
 
 - Fork this repository to your own GitHub account
 - Terminal installed
-  - Windows WSL
+  - For windows, use WSL
 - node v14+ with npm
-
-TODO(emil): Add list and links
 
 ### Required tools
 
@@ -542,7 +536,7 @@ In this step, we are going to add some tools that runs static code analysis on t
 
 Time to enable github to deploy our application. We need to create a new user on the server called `github` which our github action will use when logging in to the server. This user will be in group `deployers`, which we've already made sure has sufficient permissions to deploy the application.
 
-TODO: Explain that we need to set up a new SSH key for this user
+In addition, we need set up a new SSH key for this user. The private key will be uploaded to Github as a secret which will allow the Github Actions runner to identify itself as the 'github' user.
 
 1. On the server, add a new user called `github` make sure to use `--disabled-password` flag to skip password set up for this user.
 
