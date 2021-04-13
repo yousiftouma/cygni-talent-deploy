@@ -518,6 +518,17 @@ In this step, we are going to add some tools that runs static code analysis on t
    ```
 
    ESLint can then be invoked by running `npm run lint` in the repository root.
+   
+   If you get linting errors, it is probably due to bad configuration. Make sure the `env` part of the configuration is defined as:
+   
+   ```
+   "env": {
+     "commonjs": true,
+     "es2021": true,
+     "node": true,
+     "mocha": true
+   }
+   ```
 
 1. Install prettier - follow instructions on https://prettier.io/docs/en/install.html
 
