@@ -41,3 +41,21 @@ jobs:
         
       - name: Test
         run: npm test
+
+      - name: Set up ssh
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_rsa
+        env:
+          SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+          SSH_KNOWN_HOSTS: ${{secrets.SSH_KNOWN_HOSTS}}
+          
+      - name: Deploy
+        run: |
+          ./scripts/deploy.sh
+        shell: bash
+        env:
+          SERVER: "<SERVER-IP>"
+          DEPLOY_USER: "github"
