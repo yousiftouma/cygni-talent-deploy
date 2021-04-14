@@ -4,11 +4,13 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "mocha src/**/*.test.js"
+    "test": "mocha src/**/*.test.js",
+    "lint": "eslint src/"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "eslint": "^7.24.0",
     "mocha": "^8.3.2",
     "supertest": "^6.1.3"
   }
