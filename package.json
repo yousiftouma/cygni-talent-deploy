@@ -6,7 +6,8 @@
     "start": "node src/index.js",
     "test": "mocha src/**/*.test.js",
     "lint": "eslint src/",
-    "prettier": "prettier --check src/"
+    "prettier": "prettier --check src/",
+    "format": "prettier --write src/"
   },
   "author": "",
   "license": "ISC",

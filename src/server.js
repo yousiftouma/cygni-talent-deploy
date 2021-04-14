@@ -1,7 +1,6 @@
 const http = require("http");
 
-function createServer(config = {})
- {
+function createServer(config = {}) {
   const { buildNumber = "n/a" } = config;
 
   const server = http.createServer((req, res) => {
