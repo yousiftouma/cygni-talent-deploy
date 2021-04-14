@@ -1,0 +1,6 @@
+# ignore everything but src
+package.json
+package-lock.json
+deploy
+readme.md
+node_modules
