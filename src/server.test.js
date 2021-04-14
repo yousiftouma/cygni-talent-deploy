@@ -7,6 +7,6 @@ describe("server", () => {
     const server = createServer();
     const response = await supertest(server).get("/").expect(200);
 
-    assert.match(response.text, /^Hello World/);
+    assert.match(response.text, /^Hello/);
   });
 });
